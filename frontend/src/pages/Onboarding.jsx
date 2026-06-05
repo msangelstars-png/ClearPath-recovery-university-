@@ -4,15 +4,20 @@ import { ArrowRight, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/Layout";
 import { platformApi } from "@/services/api";
+import { languages } from "@/data/platform";
 
 const stages = ["Exploring recovery", "Early recovery", "Rebuilding routines", "Long-term growth", "Supporting family"];
 const goalOptions = ["Reduce cravings", "Improve mood", "Repair relationships", "Build daily structure", "Strengthen confidence", "Understand recovery"];
 const preferenceOptions = ["Short lessons", "Reflection prompts", "Quizzes", "Step-by-step plans", "AI professor coaching", "Journaling"];
+const pathwayOptions = ["active-addiction", "early-recovery", "family-member", "faith-based", "mental-wellness", "parenting", "relationships", "financial-freedom", "career-development", "life-skills"];
 
 export default function Onboarding() {
   const [stage, setStage] = useState(stages[0]);
   const [goals, setGoals] = useState([goalOptions[0]]);
   const [preferences, setPreferences] = useState([preferenceOptions[0]]);
+  const [pathways, setPathways] = useState(["early-recovery"]);
+  const [language, setLanguage] = useState("en");
+  const [journalConsent, setJournalConsent] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -22,7 +27,7 @@ export default function Onboarding() {
     setSaving(true);
     setError("");
     try {
-      await platformApi.onboarding({ recovery_stage: stage, goals, learning_preferences: preferences, support_focus: "balanced" });
+      await platformApi.onboarding({ recovery_stage: stage, goals, learning_preferences: preferences, support_focus: "balanced", preferred_language: language, pathway_interests: pathways, journal_memory_consent: journalConsent });
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.detail || "Your roadmap could not be saved. Please try again.");
@@ -49,9 +54,18 @@ export default function Onboarding() {
           <div className="mt-4 flex flex-wrap gap-3">
             {preferenceOptions.map((item) => <button key={item} onClick={() => toggle(preferences, item, setPreferences)} data-testid={`preference-option-${item.toLowerCase().replaceAll(" ", "-")}`} className={`rounded-full border px-4 py-2 text-sm transition-colors ${preferences.includes(item) ? "border-brand-primary bg-brand-primary text-white" : "border-brand-border bg-white text-brand-charcoal hover:bg-brand-card"}`}>{preferences.includes(item) && <Check className="mr-1 inline" size={14} />} {item}</button>)}
           </div>
+          <h2 className="mt-8 font-heading text-2xl font-medium text-brand-dark" data-testid="pathway-interests-title">Pathway interests</h2>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {pathwayOptions.map((item) => <button key={item} onClick={() => toggle(pathways, item, setPathways)} data-testid={`pathway-interest-${item}`} className={`rounded-full border px-4 py-2 text-sm transition-colors ${pathways.includes(item) ? "border-brand-primary bg-brand-primary text-white" : "border-brand-border bg-white text-brand-charcoal hover:bg-brand-card"}`}>{pathways.includes(item) && <Check className="mr-1 inline" size={14} />} {item.replaceAll("-", " ")}</button>)}
+          </div>
+          <h2 className="mt-8 font-heading text-2xl font-medium text-brand-dark" data-testid="language-title">Preferred language</h2>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {languages.map((item) => <button key={item.code} onClick={() => setLanguage(item.code)} data-testid={`onboarding-language-${item.code}`} className={`rounded-full border px-4 py-2 text-sm transition-colors ${language === item.code ? "border-brand-primary bg-brand-primary text-white" : "border-brand-border bg-white text-brand-charcoal hover:bg-brand-card"}`}>{item.name}</button>)}
+          </div>
+          <button onClick={() => setJournalConsent(!journalConsent)} data-testid="journal-memory-consent-toggle" className={`mt-5 rounded-xl border p-4 text-left text-sm ${journalConsent ? "border-brand-primary bg-brand-card text-brand-charcoal" : "border-brand-border bg-white text-brand-muted"}`}>{journalConsent ? "Journal insights may personalize professor memory." : "Journal insights will not be used for professor memory."}</button>
           <div className="mt-8 rounded-2xl bg-brand-card p-5" data-testid="roadmap-preview-box">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary" data-testid="roadmap-preview-label">Roadmap preview</p>
-            <p className="mt-2 text-brand-charcoal" data-testid="roadmap-preview-text">Your first plan will combine {stage.toLowerCase()}, {goals.slice(0, 2).join(" and ") || "personal goals"}, and {preferences.slice(0, 2).join(" + ") || "guided learning"}.</p>
+            <p className="mt-2 text-brand-charcoal" data-testid="roadmap-preview-text">Your first plan will combine {stage.toLowerCase()}, {goals.slice(0, 2).join(" and ") || "personal goals"}, {pathways.slice(0, 2).join(" + ")}, and {preferences.slice(0, 2).join(" + ") || "guided learning"}.</p>
           </div>
           {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-brand-error" data-testid="onboarding-error-message">{error}</p>}
           <Button onClick={submit} disabled={saving || goals.length === 0 || preferences.length === 0} data-testid="save-onboarding-button" className="mt-6 rounded-full bg-brand-primary px-6 py-6 text-white hover:bg-brand-primaryHover">{saving ? "Creating roadmap…" : "Generate my roadmap"} <ArrowRight size={17} /></Button>

@@ -3,16 +3,17 @@ import { Send, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { PageShell } from "@/components/Layout";
-import { professors } from "@/data/platform";
 import { platformApi, streamProfessorChat } from "@/services/api";
 
 export default function AIProfessors() {
-  const [active, setActive] = useState(professors[0]);
+  const [professors, setProfessors] = useState([]);
+  const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => { platformApi.aiMessages(active.id).then(({ data }) => { setMessages(data.messages); setError(""); }).catch(() => setError("Professor history could not load. You can still try sending a new message.")); }, [active]);
+  useEffect(() => { platformApi.professors().then(({ data }) => { setProfessors(data.professors); setActive(data.professors[0]); }); }, []);
+  useEffect(() => { if (active) platformApi.aiMessages(active.id).then(({ data }) => { setMessages(data.messages); setError(""); }).catch(() => setError("Professor history could not load. You can still try sending a new message.")); }, [active]);
   const send = async () => {
     if (!text.trim()) return;
     const prompt = text;
@@ -29,14 +30,15 @@ export default function AIProfessors() {
       setStreaming(false);
     }
   };
+  if (!active) return <PageShell title="AI Professors"><div data-testid="professors-loading-state">Gathering professors…</div></PageShell>;
   return (
     <PageShell eyebrow="AI Professor system" title="Ask a professor who remembers your path">
       <div className="grid gap-6 lg:grid-cols-4" data-testid="ai-professors-grid">
         <aside className="rounded-2xl border border-brand-border bg-white p-4" data-testid="professor-selector-panel">
-          {professors.map((professor) => <button key={professor.id} onClick={() => setActive(professor)} data-testid={`professor-select-${professor.id}`} className={`mb-3 w-full rounded-xl border p-4 text-left transition-colors ${active.id === professor.id ? "border-brand-primary bg-brand-card" : "border-brand-border bg-white hover:bg-brand-card"}`}><p className="font-heading text-lg text-brand-dark" data-testid={`professor-name-${professor.id}`}>{professor.name}</p><p className="text-sm text-brand-muted" data-testid={`professor-focus-${professor.id}`}>{professor.focus}</p></button>)}
+          {professors.map((professor) => <button key={professor.id} onClick={() => setActive(professor)} data-testid={`professor-select-${professor.id}`} className={`mb-3 w-full rounded-xl border p-4 text-left transition-colors ${active.id === professor.id ? "border-brand-primary bg-brand-card" : "border-brand-border bg-white hover:bg-brand-card"}`}><p className="font-heading text-lg text-brand-dark" data-testid={`professor-name-${professor.id}`}>{professor.avatar} {professor.name}</p><p className="text-sm text-brand-muted" data-testid={`professor-focus-${professor.id}`}>{professor.school}</p><p className="mt-1 text-xs text-brand-muted" data-testid={`professor-style-${professor.id}`}>{professor.teaching_style}</p></button>)}
         </aside>
         <section className="rounded-2xl border border-brand-border bg-white p-5 lg:col-span-3" data-testid="professor-chat-panel">
-          <div className="mb-5 rounded-xl bg-brand-card p-4" data-testid="active-professor-header"><Sparkles className="mb-2 text-brand-primary" /><h2 className="font-heading text-2xl font-medium text-brand-dark" data-testid="active-professor-name">{active.name}</h2><p className="text-sm text-brand-muted" data-testid="active-professor-tone">{active.tone}</p></div>
+          <div className="mb-5 rounded-xl bg-brand-card p-4" data-testid="active-professor-header"><Sparkles className="mb-2 text-brand-primary" /><h2 className="font-heading text-2xl font-medium text-brand-dark" data-testid="active-professor-name">{active.avatar} {active.name}</h2><p className="text-sm text-brand-muted" data-testid="active-professor-tone">{active.personality} · {active.voice}</p><p className="mt-2 text-sm text-brand-charcoal" data-testid="active-professor-memory">Remembers profile, goals, progress, completed coursework, prior conversations, and permitted journal insights.</p></div>
           {error && <p className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-brand-error" data-testid="ai-professor-error-message">{error}</p>}
           <div className="min-h-[360px] space-y-4 rounded-xl border border-brand-border bg-brand-base p-4" data-testid="ai-message-list">
             {messages.length === 0 && <p className="text-brand-muted" data-testid="empty-ai-message">Ask about your roadmap, a lesson, a difficult moment, or the next right step.</p>}

@@ -52,6 +52,22 @@ export const platformApi = {
   aiMessages: (professorId) => api.get(`/ai/messages/${professorId}`),
   support: () => api.get("/support"),
   adminSummary: () => api.get("/admin/summary"),
+  professors: () => api.get("/professors"),
+  pathways: () => api.get("/pathways"),
+  learningPlan: () => api.get("/learning-plan"),
+  saveLearningPlan: (payload) => api.post("/learning-plan", payload),
+  classes: () => api.get("/classes"),
+  classDetail: (id) => api.get(`/classes/${id}`),
+  joinClass: (id) => api.post(`/classes/${id}/join`),
+  askClassQuestion: (id, payload) => api.post(`/classes/${id}/question`, payload),
+  completeClass: (id) => api.post(`/classes/${id}/complete`),
+  certificateDownload: (id) => api.get(`/certificates/${id}/download`),
+  supportConfig: () => api.get("/support/config"),
+  tickets: () => api.get("/support/tickets"),
+  createTicket: (payload) => api.post("/support/tickets", payload),
+  replyTicket: (id, payload) => api.post(`/support/tickets/${id}/reply`, payload),
+  adminTickets: () => api.get("/admin/support/tickets"),
+  adminUpdateTicket: (id, payload) => api.post(`/admin/support/tickets/${id}`, payload),
 };
 
 export async function streamProfessorChat(payload, onChunk) {

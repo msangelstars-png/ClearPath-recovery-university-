@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { BarChart3, CreditCard, GraduationCap, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageShell, StatTile } from "@/components/Layout";
 import { platformApi } from "@/services/api";
 
@@ -10,8 +12,9 @@ export default function Admin() {
   if (error) return <PageShell title="Admin"><div className="rounded-2xl border border-brand-border bg-white p-6 text-brand-error" data-testid="admin-error-state">{error}</div></PageShell>;
   if (!summary) return <PageShell title="Admin"><div data-testid="admin-loading-state">Loading admin panel…</div></PageShell>;
   return (
-    <PageShell eyebrow="Admin panel" title="Users, courses, payments, and analytics">
+    <PageShell eyebrow="Admin panel" title="Users, courses, payments, and analytics" action={<Button asChild data-testid="admin-support-link" className="rounded-full bg-brand-primary text-white hover:bg-brand-primaryHover"><Link to="/admin/support">Support inbox</Link></Button>}>
       <div className="grid gap-6 md:grid-cols-4" data-testid="admin-stat-grid"><StatTile label="Users" value={summary.users} icon={Users} /><StatTile label="Courses" value={summary.courses} icon={GraduationCap} /><StatTile label="Enrollments" value={summary.enrollments} icon={BarChart3} /><StatTile label="Premium" value={summary.premium_students} icon={CreditCard} /></div>
+      <div className="mt-6 grid gap-6 md:grid-cols-2" data-testid="admin-expanded-stat-grid"><StatTile label="Support Open" value={summary.support_open || 0} icon={BarChart3} /><StatTile label="Class Attendance" value={summary.class_attendance || 0} icon={GraduationCap} /></div>
       <section className="mt-8 rounded-2xl border border-brand-border bg-white p-6" data-testid="admin-payments-card"><h2 className="font-heading text-2xl font-medium text-brand-dark" data-testid="admin-payments-title">Recent payments</h2><div className="mt-4 overflow-x-auto"><table className="w-full text-left text-sm" data-testid="admin-payments-table"><thead><tr className="border-b border-brand-border text-brand-muted"><th className="py-3">Email</th><th>Plan</th><th>Status</th><th>Amount</th></tr></thead><tbody>{summary.recent_payments.map((payment) => <tr key={payment.id} className="border-b border-brand-border" data-testid={`admin-payment-row-${payment.id}`}><td className="py-3" data-testid={`admin-payment-email-${payment.id}`}>{payment.email}</td><td data-testid={`admin-payment-plan-${payment.id}`}>{payment.plan_id}</td><td data-testid={`admin-payment-status-${payment.id}`}>{payment.payment_status}</td><td data-testid={`admin-payment-amount-${payment.id}`}>${payment.amount}</td></tr>)}</tbody></table></div></section>
     </PageShell>
   );

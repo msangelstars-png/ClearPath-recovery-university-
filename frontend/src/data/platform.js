@@ -9,8 +9,25 @@ export const media = {
 export const professors = [
   { id: "hope", name: "Professor Hope", focus: "Recovery planning", tone: "steady encouragement" },
   { id: "insight", name: "Professor Insight", focus: "Mood and reflection", tone: "clear awareness" },
+  { id: "grace", name: "Professor Grace", focus: "Faith and spiritual growth", tone: "peaceful guide" },
   { id: "compass", name: "Professor Compass", focus: "Life skills", tone: "practical direction" },
   { id: "bridge", name: "Professor Bridge", focus: "Family support", tone: "repair and boundaries" },
+  { id: "nurture", name: "Professor Nurture", focus: "Parenting", tone: "patient parent coach" },
+  { id: "prosper", name: "Professor Prosper", focus: "Financial freedom", tone: "shame-free mentor" },
+  { id: "horizon", name: "Professor Horizon", focus: "Career development", tone: "future-focused coach" },
+  { id: "strength", name: "Professor Strength", focus: "Physical wellness", tone: "grounded motivator" },
+  { id: "freedom", name: "Professor Freedom", focus: "Long-term recovery", tone: "wise recovery mentor" },
+  { id: "voice", name: "Professor Voice", focus: "Communication", tone: "clear conflict coach" },
+  { id: "legacy", name: "Professor Legacy", focus: "Purpose and leadership", tone: "visionary mentor" },
+];
+
+export const languages = [
+  { code: "en", name: "English" },
+  { code: "es", name: "Spanish" },
+  { code: "fr", name: "French" },
+  { code: "pt", name: "Portuguese" },
+  { code: "de", name: "German" },
+  { code: "ar", name: "Arabic" },
 ];
 
 export const phasePreview = [

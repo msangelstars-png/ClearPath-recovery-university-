@@ -7,10 +7,13 @@ import { useAuth } from "@/context/AuthContext";
 const navItems = [
   ["Dashboard", "/dashboard"],
   ["Schools", "/schools"],
+  ["Pathways", "/pathways"],
+  ["Live Classes", "/classes"],
   ["AI Professors", "/ai-professors"],
   ["Journal", "/journal"],
   ["Roadmap", "/roadmap"],
   ["Certificates", "/certificates"],
+  ["Tickets", "/tickets"],
   ["Support", "/support"],
 ];
 
@@ -23,13 +26,13 @@ export function TopNav() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-3" data-testid="brand-home-link">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary text-white"><GraduationCap size={22} /></span>
-          <span className="font-heading text-lg font-semibold text-brand-dark">ClearPath Recovery University</span>
+          <span className="whitespace-nowrap font-heading text-base font-semibold text-brand-dark xl:text-lg">ClearPath Recovery University</span>
         </Link>
-        <nav className="hidden items-center gap-1 lg:flex" data-testid="desktop-navigation-links">
+        <nav className="hidden items-center gap-0 xl:flex" data-testid="desktop-navigation-links">
           {user && navItems.map(([label, href]) => (
-            <NavLink key={href} to={href} data-testid={`nav-link-${label.toLowerCase().replaceAll(" ", "-")}`} className={({ isActive }) => `rounded-full px-4 py-2 text-sm transition-colors ${isActive ? "bg-brand-card text-brand-primary" : "text-brand-charcoal hover:bg-brand-card"}`}>{label}</NavLink>
+            <NavLink key={href} to={href} data-testid={`nav-link-${label.toLowerCase().replaceAll(" ", "-")}`} className={({ isActive }) => `whitespace-nowrap rounded-full px-2.5 py-2 text-xs transition-colors 2xl:px-3 2xl:text-sm ${isActive ? "bg-brand-card text-brand-primary" : "text-brand-charcoal hover:bg-brand-card"}`}>{label}</NavLink>
           ))}
-          {user?.role === "admin" && <NavLink to="/admin" data-testid="nav-link-admin" className="rounded-full px-4 py-2 text-sm text-brand-charcoal hover:bg-brand-card">Admin</NavLink>}
+          {user?.role === "admin" && <NavLink to="/admin" data-testid="nav-link-admin" className="whitespace-nowrap rounded-full px-2.5 py-2 text-xs text-brand-charcoal hover:bg-brand-card 2xl:px-3 2xl:text-sm">Admin</NavLink>}
         </nav>
         <div className="flex items-center gap-2">
           {!user ? (
@@ -37,11 +40,11 @@ export function TopNav() {
           ) : (
             <Button variant="outline" onClick={() => { logout(); navigate("/"); }} data-testid="logout-button" className="rounded-full border-brand-border bg-white"><LogOut size={16} /> Logout</Button>
           )}
-          {user && <Button variant="ghost" onClick={() => setMobileOpen(!mobileOpen)} data-testid="mobile-menu-button" className="lg:hidden"><Menu size={18} /></Button>}
+          {user && <Button variant="ghost" onClick={() => setMobileOpen(!mobileOpen)} data-testid="mobile-menu-button" className="xl:hidden"><Menu size={18} /></Button>}
         </div>
       </div>
       {user && mobileOpen && (
-        <nav className="border-t border-brand-border px-4 py-3 lg:hidden" data-testid="mobile-navigation-links">
+        <nav className="border-t border-brand-border px-4 py-3 xl:hidden" data-testid="mobile-navigation-links">
           <div className="flex flex-wrap gap-2">
             {navItems.map(([label, href]) => (
               <NavLink key={href} to={href} onClick={() => setMobileOpen(false)} data-testid={`mobile-nav-link-${label.toLowerCase().replaceAll(" ", "-")}`} className={({ isActive }) => `rounded-full px-3 py-2 text-sm transition-colors ${isActive ? "bg-brand-card text-brand-primary" : "text-brand-charcoal hover:bg-brand-card"}`}>{label}</NavLink>
