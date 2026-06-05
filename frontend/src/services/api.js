@@ -1,0 +1,88 @@
+import axios from "axios";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+export const API_BASE = `${BACKEND_URL}/api`;
+
+const api = axios.create({ baseURL: API_BASE });
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("clearpath_token");
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+export const setSession = (token, user) => {
+  localStorage.setItem("clearpath_token", token);
+  localStorage.setItem("clearpath_user", JSON.stringify(user));
+};
+
+export const clearSession = () => {
+  localStorage.removeItem("clearpath_token");
+  localStorage.removeItem("clearpath_user");
+};
+
+export const getStoredUser = () => {
+  const raw = localStorage.getItem("clearpath_user");
+  return raw ? JSON.parse(raw) : null;
+};
+
+export const authApi = {
+  register: (payload) => api.post("/auth/register", payload),
+  login: (payload) => api.post("/auth/login", payload),
+  me: () => api.get("/me"),
+};
+
+export const platformApi = {
+  onboarding: (payload) => api.post("/onboarding", payload),
+  dashboard: () => api.get("/dashboard"),
+  schools: () => api.get("/schools"),
+  enrollSchool: (id) => api.post(`/schools/${id}/enroll`),
+  courses: () => api.get("/courses"),
+  course: (id) => api.get(`/courses/${id}`),
+  enrollCourse: (id) => api.post(`/courses/${id}/enroll`),
+  completeLesson: (id, payload) => api.post(`/lessons/${id}/complete`, payload),
+  checkins: () => api.get("/checkins"),
+  createCheckin: (payload) => api.post("/checkins", payload),
+  journal: () => api.get("/journal"),
+  createJournal: (payload) => api.post("/journal", payload),
+  certificates: () => api.get("/certificates"),
+  plans: () => api.get("/plans"),
+  checkout: (payload) => api.post("/payments/checkout", payload),
+  paymentStatus: (sessionId) => api.get(`/payments/status/${sessionId}`),
+  aiMessages: (professorId) => api.get(`/ai/messages/${professorId}`),
+  support: () => api.get("/support"),
+  adminSummary: () => api.get("/admin/summary"),
+};
+
+export async function streamProfessorChat(payload, onChunk) {
+  const token = localStorage.getItem("clearpath_token");
+  const response = await fetch(`${API_BASE}/ai/chat/stream`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) throw new Error("Unable to reach professor right now");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let full = "";
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value, { stream: true });
+    chunk.split("\n\n").forEach((line) => {
+      if (line.startsWith("data: ")) {
+        const data = line.replace("data: ", "");
+        if (data !== "[DONE]") {
+          full += data;
+          onChunk(full);
+        }
+      }
+    });
+  }
+  return full;
+}
+
+export default api;
