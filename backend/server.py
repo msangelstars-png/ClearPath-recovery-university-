@@ -816,6 +816,7 @@ async def export_student_data(user: Dict[str, Any] = Depends(get_current_user)):
         "event_attendance": {"user_id": user["id"]},
         "support_tickets": {"user_id": user["id"]},
         "files": {"user_id": user["id"], "is_deleted": False},
+        "voice_sessions": {"user_id": user["id"]},
     }
     export: Dict[str, Any] = {"exported_at": now_iso(), "student": public_user(user), "data_governance": {"encrypted_storage": True, "role_based_access": True, "soft_delete": True, "backup_policy": "Object storage and MongoDB metadata are structured for automated backup/disaster recovery workflows."}}
     for name, query in collections.items():
@@ -950,6 +951,12 @@ async def create_voice_session(payload: VoiceSessionRequest, user: Dict[str, Any
 @api_router.get("/voice/professors")
 async def voice_professors(user: Dict[str, Any] = Depends(get_current_user)):
     return {"professors": [{"id": key, **value, "voice_ready": True, "video_avatar_ready": True, "realtime_provider_ready": True} for key, value in PROFESSORS.items()]}
+
+
+@api_router.get("/voice/sessions")
+async def list_voice_sessions(user: Dict[str, Any] = Depends(get_current_user)):
+    sessions = await db.voice_sessions.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return {"sessions": sessions}
 
 
 @api_router.get("/learning-plan")

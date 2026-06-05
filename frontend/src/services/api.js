@@ -82,6 +82,7 @@ export const platformApi = {
   attendEvent: (id) => api.post(`/events/${id}/attend`),
   replays: () => api.get("/replays"),
   voiceSession: (payload) => api.post("/voice/session", payload),
+  voiceSessions: () => api.get("/voice/sessions"),
   voiceProfessors: () => api.get("/voice/professors"),
 };
 
