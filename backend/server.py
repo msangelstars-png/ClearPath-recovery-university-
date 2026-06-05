@@ -97,6 +97,9 @@ def public_user(user: Dict[str, Any]) -> Dict[str, Any]:
         "role": user.get("role", "student"),
         "subscription_status": user.get("subscription_status", "free"),
         "onboarding_complete": user.get("onboarding_complete", False),
+        "has_completed_onboarding": user.get("has_completed_onboarding", user.get("onboarding_complete", False)),
+        "has_completed_first_login": user.get("has_completed_first_login", user.get("dashboard_visit_count", 0) > 0),
+        "has_visited_dashboard": user.get("has_visited_dashboard", user.get("dashboard_visit_count", 0) > 0),
         "created_at": user.get("created_at"),
     }
 
@@ -614,6 +617,10 @@ async def register(payload: AuthRequest):
         "role": "admin" if user_count == 0 else "student",
         "subscription_status": "free",
         "onboarding_complete": False,
+        "has_completed_onboarding": False,
+        "has_completed_first_login": False,
+        "has_visited_dashboard": False,
+        "dashboard_visit_count": 0,
         "streak": 0,
         "created_at": now_iso(),
         "updated_at": now_iso(),
@@ -701,7 +708,7 @@ async def save_onboarding(payload: OnboardingRequest, user: Dict[str, Any] = Dep
     }
     profile["individual_learning_plan"] = build_individual_learning_plan(profile)
     await db.assessments.insert_one(profile.copy())
-    await db.users.update_one({"id": user["id"]}, {"$set": {"onboarding_complete": True, "updated_at": now_iso()}})
+    await db.users.update_one({"id": user["id"]}, {"$set": {"onboarding_complete": True, "has_completed_onboarding": True, "has_completed_first_login": False, "has_visited_dashboard": False, "dashboard_visit_count": 0, "onboarding_completed_at": now_iso(), "updated_at": now_iso()}})
     await db.ai_memories.update_one(
         {"user_id": user["id"]},
         {"$set": {"user_id": user["id"], "profile": profile, "updated_at": now_iso()}},
@@ -1095,6 +1102,8 @@ async def list_certificates(user: Dict[str, Any] = Depends(get_current_user)):
 
 @api_router.get("/dashboard")
 async def dashboard(user: Dict[str, Any] = Depends(get_current_user)):
+    has_seen_dashboard = bool(user.get("has_visited_dashboard", user.get("dashboard_visit_count", 0) > 0))
+    is_first_dashboard_visit = bool(user.get("has_completed_onboarding", user.get("onboarding_complete", False))) and not has_seen_dashboard
     profile = await db.assessments.find_one({"user_id": user["id"]}, {"_id": 0}, sort=[("created_at", -1)])
     enrollments = await db.enrollments.find({"user_id": user["id"]}, {"_id": 0}).to_list(100)
     certificates = await db.certificates.find({"user_id": user["id"]}, {"_id": 0}).to_list(100)
@@ -1112,8 +1121,30 @@ async def dashboard(user: Dict[str, Any] = Depends(get_current_user)):
     ]
     if profile and profile.get("goals"):
         recommendations.insert(0, f"Focus this week: {profile['goals'][0]}")
+    recommended_course = None
+    assigned_professor = None
+    if profile:
+        interests = profile.get("pathway_interests") or []
+        selected_pathway = next((pathway for pathway in PATHWAYS if pathway["id"] in interests), None) or PATHWAYS[0]
+        recommended_course = next((course for course in courses if course.get("school_id") == selected_pathway.get("school_id")), None) or (courses[0] if courses else None)
+        assigned_professor = PROFESSORS.get(selected_pathway.get("professor_id"), PROFESSORS["hope"])
+    first_visit_experience = {
+        "is_first_session": is_first_dashboard_visit,
+        "welcome_message": f"Welcome to ClearPath, {user['name']}" if is_first_dashboard_visit else f"Welcome back, {user['name']}",
+        "roadmap_summary": profile.get("roadmap", [])[:4] if profile else [],
+        "recommended_first_course": recommended_course,
+        "assigned_ai_professor": assigned_professor,
+        "next_steps": [
+            "Review your personalized roadmap",
+            "Enroll in your recommended first course",
+            "Meet your assigned AI Professor",
+            "Complete your first daily check-in",
+        ] if is_first_dashboard_visit else [],
+    }
     return {
         "user": public_user(user),
+        "is_first_session": is_first_dashboard_visit,
+        "first_visit_experience": first_visit_experience,
         "profile": profile,
         "active_learning": active,
         "progress": avg_progress,
@@ -1126,6 +1157,15 @@ async def dashboard(user: Dict[str, Any] = Depends(get_current_user)):
         "recommendations": recommendations,
         "notifications": ["Your personalized roadmap is ready", "Daily reflection reminder", "New lesson recommendation available"],
     }
+
+
+@api_router.post("/dashboard/mark-visited")
+async def mark_dashboard_visited(user: Dict[str, Any] = Depends(get_current_user)):
+    await db.users.update_one(
+        {"id": user["id"]},
+        {"$set": {"has_visited_dashboard": True, "has_completed_first_login": True, "first_dashboard_visited_at": user.get("first_dashboard_visited_at") or now_iso(), "updated_at": now_iso()}, "$inc": {"dashboard_visit_count": 1}},
+    )
+    return {"has_visited_dashboard": True, "has_completed_first_login": True}
 
 
 @api_router.post("/ai/chat/stream")

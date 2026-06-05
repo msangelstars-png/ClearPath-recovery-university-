@@ -35,6 +35,7 @@ export const authApi = {
 export const platformApi = {
   onboarding: (payload) => api.post("/onboarding", payload),
   dashboard: () => api.get("/dashboard"),
+  markDashboardVisited: () => api.post("/dashboard/mark-visited"),
   schools: () => api.get("/schools"),
   enrollSchool: (id) => api.post(`/schools/${id}/enroll`),
   courses: () => api.get("/courses"),

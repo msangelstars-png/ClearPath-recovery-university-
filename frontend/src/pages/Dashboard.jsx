@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Award, Bell, BookOpen, CalendarDays, FileArchive, Flame, GraduationCap, LineChart, Sparkles, Target } from "lucide-react";
+import { ArrowRight, Award, Bell, BookOpen, CalendarDays, FileArchive, Flame, GraduationCap, LineChart, Sparkles, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PageShell, StatTile, EmptyState } from "@/components/Layout";
@@ -13,6 +13,11 @@ export default function Dashboard() {
   const [params] = useSearchParams();
 
   useEffect(() => { platformApi.dashboard().then(({ data }) => setData(data)).catch(() => setError("Dashboard data could not load. Please refresh and try again.")); }, []);
+  useEffect(() => {
+    if (!data?.is_first_session) return;
+    const timer = setTimeout(() => platformApi.markDashboardVisited().catch(() => {}), 1200);
+    return () => clearTimeout(timer);
+  }, [data?.is_first_session]);
   useEffect(() => {
     const sessionId = params.get("session_id");
     if (!sessionId) return;
@@ -36,10 +41,38 @@ export default function Dashboard() {
 
   if (error) return <PageShell title="Dashboard"><div className="rounded-2xl border border-brand-border bg-white p-6 text-brand-error" data-testid="dashboard-error-state">{error}</div></PageShell>;
   if (!data) return <PageShell title="Dashboard"><div data-testid="dashboard-loading-state">Preparing your dashboard…</div></PageShell>;
+  const firstVisit = data.first_visit_experience || {};
+  const welcomeTitle = firstVisit.welcome_message || (data.is_first_session ? `Welcome to ClearPath, ${data.user.name}` : `Welcome back, ${data.user.name}`);
 
   return (
-    <PageShell eyebrow="Student dashboard" title={`Welcome back, ${data.user.name}`} action={<Button asChild data-testid="dashboard-ai-action" className="rounded-full bg-brand-primary text-white hover:bg-brand-primaryHover"><Link to="/ai-professors"><Sparkles size={16} /> Ask a professor</Link></Button>}>
+    <PageShell eyebrow={data.is_first_session ? "Your first day at ClearPath" : "Student dashboard"} title={welcomeTitle} action={<Button asChild data-testid="dashboard-ai-action" className="rounded-full bg-brand-primary text-white hover:bg-brand-primaryHover"><Link to="/ai-professors"><Sparkles size={16} /> Ask a professor</Link></Button>}>
       {paymentMessage && <div className="mb-6 rounded-2xl border border-brand-success/30 bg-green-50 p-4 text-brand-success" data-testid="payment-status-message">{paymentMessage}</div>}
+      {data.is_first_session && (
+        <section className="mb-6 rounded-2xl border border-brand-border bg-white p-6" data-testid="first-visit-welcome-panel">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary" data-testid="first-visit-label">Your university orientation</p>
+          <h2 className="mt-3 font-heading text-3xl font-semibold text-brand-dark" data-testid="first-visit-title">Your personalized roadmap is ready</h2>
+          <div className="mt-5 grid gap-4 lg:grid-cols-3">
+            <div className="rounded-xl bg-brand-card p-4" data-testid="first-visit-roadmap-summary">
+              <h3 className="font-heading text-xl text-brand-dark">Roadmap summary</h3>
+              <div className="mt-3 space-y-2">{(firstVisit.roadmap_summary || []).map((week) => <p key={week.week} className="text-sm text-brand-charcoal" data-testid={`first-visit-roadmap-week-${week.week}`}>Week {week.week}: {week.title}</p>)}</div>
+            </div>
+            <div className="rounded-xl bg-brand-card p-4" data-testid="first-visit-recommended-course">
+              <h3 className="font-heading text-xl text-brand-dark">Recommended first course</h3>
+              <p className="mt-2 text-sm text-brand-charcoal" data-testid="first-visit-course-title">{firstVisit.recommended_first_course?.title || "Recovery Foundations"}</p>
+              <p className="mt-1 text-xs text-brand-muted" data-testid="first-visit-course-summary">{firstVisit.recommended_first_course?.summary || "Start with a gentle foundation course."}</p>
+            </div>
+            <div className="rounded-xl bg-brand-card p-4" data-testid="first-visit-assigned-professor">
+              <h3 className="font-heading text-xl text-brand-dark">Assigned AI Professor</h3>
+              <p className="mt-2 text-sm text-brand-charcoal" data-testid="first-visit-professor-name">{firstVisit.assigned_ai_professor?.avatar} {firstVisit.assigned_ai_professor?.name || "Professor Hope"}</p>
+              <p className="mt-1 text-xs text-brand-muted" data-testid="first-visit-professor-style">{firstVisit.assigned_ai_professor?.teaching_style || "Warm, practical guidance."}</p>
+            </div>
+          </div>
+          <div className="mt-5 rounded-xl border border-brand-border p-4" data-testid="first-visit-next-steps">
+            <h3 className="font-heading text-xl text-brand-dark">Next steps</h3>
+            <div className="mt-3 grid gap-2 md:grid-cols-4">{(firstVisit.next_steps || []).map((step) => <div key={step} className="flex items-center gap-2 text-sm text-brand-charcoal" data-testid={`first-visit-step-${step.toLowerCase().replaceAll(" ", "-")}`}><ArrowRight size={14} className="text-brand-primary" /> {step}</div>)}</div>
+          </div>
+        </section>
+      )}
       <div className="grid gap-6 md:grid-cols-4" data-testid="dashboard-stat-grid">
         <StatTile label="Progress" value={`${data.progress}%`} icon={LineChart} />
         <StatTile label="Streak" value={`${data.streak} days`} icon={Flame} />
