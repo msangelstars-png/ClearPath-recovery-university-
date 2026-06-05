@@ -145,3 +145,17 @@ Build a fully functional platform called ClearPath Recovery University: a person
 - Added onboarding questions directly after primary recovery focus: “How long has this been affecting your life?” and “Have you received treatment or recovery support before?”
 - Stored `duration_affecting_life` and `previous_treatment_support` in profile/assessment and used them in roadmap and learning-plan personalization.
 - Regression passed: `/app/test_reports/iteration_11.json` and visitor access control tests.
+
+
+## Feature Addition — Premium Trial, Annual Plan, and Deeper Personalization — 2026-06-05
+- Added automatic 7-day Premium trial after first onboarding, no credit card required.
+- Trial unlocks premium course access through entitlement helper `has_premium_access`; premium courses are no longer locked during active trial.
+- Added dashboard trial banner with days remaining and first-week guidance.
+- Added automatic trial expiration normalization: expired `premium_trial` users downgrade to `free` on authenticated access while progress/data remain intact.
+- Added `Premium Annual` plan at $199/year and annual subscription status handling.
+- Updated first-time dashboard welcome to “Welcome to ClearPath Recovery University, [Name]” with assigned AI Professor, recommended first course, roadmap summary, and next steps.
+- Strengthened AI Professor prompt context to remember recovery focus, stage, duration, treatment/support history, goals, coursework, attendance, support interactions, and prior conversations.
+- Added family-support guardrail: Supporting a Loved One users receive family education and are not addressed as the substance user.
+- Added focus-specific courses/lessons for Alcohol, Opioids, Fentanyl, Stimulants, Gambling, Gaming, Family Support, and Mental Wellness.
+- Added `/api/focus/curriculum` for focus-specific lessons, assignments, resources, journeys, and community recommendations.
+- Regression passed: `/app/backend/tests/test_trial_dashboard_focus_regression.py` now passes 16/16 tests.

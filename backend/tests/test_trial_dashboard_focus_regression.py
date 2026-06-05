@@ -49,6 +49,21 @@ BASE_URL = _load_base_url()
 API_BASE = f"{BASE_URL}/api"
 
 
+def _load_backend_env_vars() -> None:
+    env_path = "/app/backend/.env"
+    if not os.path.exists(env_path):
+        return
+    with open(env_path, "r", encoding="utf-8") as f:
+        for line in f:
+            if "=" not in line or line.strip().startswith("#"):
+                continue
+            key, value = line.strip().split("=", 1)
+            os.environ.setdefault(key, value.strip().strip('"'))
+
+
+_load_backend_env_vars()
+
+
 @pytest.fixture
 def api_client() -> requests.Session:
     # HTTP module: shared requests session
