@@ -124,3 +124,13 @@ Build a fully functional platform called ClearPath Recovery University: a person
 - Made onboarding idempotent so returning users cannot be downgraded back to first-session by re-submitting onboarding.
 - Normalized seeded returning test accounts so they correctly show "Welcome back".
 - Regression passed: `/app/test_reports/iteration_7.json` and `/app/test_reports/pytest/pytest_results_iteration_7.xml`.
+
+
+## Feature Addition — Primary Recovery Focus Assessment — 2026-06-05
+- Added required first onboarding step: “What are you currently seeking help with?” before stage, goals, preferences, or pathway questions.
+- Supports multiple selections across Alcohol, Opioids, Fentanyl, Prescription Opioids, Heroin, Stimulants, Methamphetamine, Cocaine, Crack Cocaine, Cannabis, Benzodiazepines, Nicotine/Tobacco, Gambling, Gaming, Pornography/Sexual Behavior, Food and Eating Behaviors, Multiple Substances, Supporting a Loved One, Mental Wellness Only, and Other.
+- Added exact second onboarding step: “What best describes your current stage?” with Actively using, Thinking about change, Preparing to quit, Early recovery, Maintaining recovery, Returning after relapse, Supporting a loved one.
+- Backend now requires `primary_recovery_focus` and validates all focus/stage options; invalid or empty focus returns 422.
+- Stored recovery focus in assessment/profile and AI memory; used it to personalize roadmap, learning plan, dashboard recommendations, recommended first course, assigned AI professor, resource recommendations, community recommendations, assignments, reflections, relapse prevention planning, and AI Professor prompt context.
+- Added first-visit focus-specific personalization panel on dashboard.
+- Regression passed: `/app/test_reports/iteration_9.json` and `/app/test_reports/pytest/pytest_results_iteration_9_focus.xml`.
