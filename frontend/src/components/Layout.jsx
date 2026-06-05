@@ -7,13 +7,15 @@ import { useAuth } from "@/context/AuthContext";
 const navItems = [
   ["Dashboard", "/dashboard"],
   ["Schools", "/schools"],
+  ["Programs", "/programs"],
   ["Pathways", "/pathways"],
   ["Live Classes", "/classes"],
+  ["Events", "/events"],
   ["AI Professors", "/ai-professors"],
+  ["Voice Studio", "/voice-studio"],
   ["Journal", "/journal"],
-  ["Roadmap", "/roadmap"],
+  ["Docs", "/documents"],
   ["Certificates", "/certificates"],
-  ["Tickets", "/tickets"],
   ["Support", "/support"],
 ];
 
@@ -24,7 +26,7 @@ export function TopNav() {
   return (
     <header className="sticky top-0 z-40 max-w-full overflow-x-hidden border-b border-brand-border bg-brand-base/95 backdrop-blur-md" data-testid="top-navigation">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-4 sm:px-6 lg:px-8">
-        <Link to={user ? "/dashboard" : "/"} className="flex min-w-0 items-center gap-2 sm:gap-3" data-testid="brand-home-link">
+        <Link to={user ? "/dashboard" : "/"} className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3" data-testid="brand-home-link">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white sm:h-10 sm:w-10"><GraduationCap size={22} /></span>
           <span className="min-w-0 truncate whitespace-nowrap font-heading text-base font-semibold text-brand-dark xl:text-lg">ClearPath<span className="hidden sm:inline"> Recovery University</span></span>
         </Link>

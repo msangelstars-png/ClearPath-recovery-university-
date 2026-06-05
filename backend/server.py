@@ -1,7 +1,7 @@
-from fastapi import FastAPI, APIRouter, Depends, HTTPException, Request
+from fastapi import FastAPI, APIRouter, Depends, File, Form, Header, HTTPException, Query, Request, UploadFile
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import StreamingResponse
+from starlette.responses import Response, StreamingResponse
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
 import jwt
+import requests
 from passlib.context import CryptContext
 
 try:
@@ -43,6 +44,9 @@ JWT_ALGORITHM = "HS256"
 EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY")
 STRIPE_API_KEY = os.environ.get("STRIPE_API_KEY")
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
+APP_NAME = "clearpath-recovery-university"
+storage_key: Optional[str] = None
 
 # Create the main app without a prefix
 app = FastAPI()
@@ -53,6 +57,36 @@ api_router = APIRouter(prefix="/api")
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def init_storage() -> str:
+    global storage_key
+    if storage_key:
+        return storage_key
+    if not EMERGENT_LLM_KEY:
+        raise RuntimeError("Storage key is not configured")
+    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_LLM_KEY}, timeout=30)
+    resp.raise_for_status()
+    storage_key = resp.json()["storage_key"]
+    return storage_key
+
+
+def put_object(path: str, data: bytes, content_type: str) -> Dict[str, Any]:
+    key = init_storage()
+    resp = requests.put(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key, "Content-Type": content_type}, data=data, timeout=120)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def get_object(path: str) -> tuple[bytes, str]:
+    key = init_storage()
+    resp = requests.get(f"{STORAGE_URL}/objects/{path}", headers={"X-Storage-Key": key}, timeout=60)
+    resp.raise_for_status()
+    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+
+
+def safe_ext(filename: str) -> str:
+    return filename.rsplit(".", 1)[-1].lower() if "." in filename else "bin"
 
 
 def public_user(user: Dict[str, Any]) -> Dict[str, Any]:
@@ -346,6 +380,68 @@ LIVE_CLASSES = [
 SUPPORT_CATEGORIES = ["Technical Issues", "Billing", "Account Access", "Course Questions", "Certificate Requests", "Live Class Issues", "AI Professor Issues", "General Support", "Safety Concerns"]
 SUPPORT_PRIORITIES = ["Low", "Normal", "High", "Urgent"]
 SUPPORT_STATUSES = ["Open", "In Review", "Waiting for Student", "Resolved", "Closed"]
+TRACKS = ["beginner", "intermediate", "advanced", "mastery"]
+
+
+def generate_programs() -> List[Dict[str, Any]]:
+    programs = []
+    for school in SCHOOLS:
+        school_courses = [course for course in COURSES if course["school_id"] == school["id"]]
+        base_course = school_courses[0] if school_courses else {"id": f"{school['id']}-core", "title": f"{school['name']} Core"}
+        tracks = []
+        for index, track in enumerate(TRACKS, start=1):
+            modules = []
+            for module_number in range(1, 5):
+                lesson_id = f"{school['id']}-{track}-m{module_number}-lesson"
+                assignment_id = f"{school['id']}-{track}-m{module_number}-assignment"
+                modules.append({
+                    "id": f"{school['id']}-{track}-m{module_number}",
+                    "title": f"Module {module_number}: {track.title()} {school['name'].replace('School of ', '')}",
+                    "weeks": [((index - 1) * 4) + module_number],
+                    "lessons": [{
+                        "id": lesson_id,
+                        "title": f"{track.title()} Lesson {module_number}",
+                        "content": f"This {track} lesson in {school['name']} connects student goals, recovery stage, and practical university coursework into one weekly action plan.",
+                        "quiz": [{"question": "What is the best way to build lasting progress?", "options": ["One repeatable action", "Perfection", "Avoiding support"], "answer": 0}],
+                    }],
+                    "assignments": [{
+                        "id": assignment_id,
+                        "title": f"{track.title()} Reflection Assignment {module_number}",
+                        "prompt": "Submit a reflection, worksheet, audio note, image, or document showing how you applied this module.",
+                        "points": 25,
+                    }],
+                    "milestones": ["lesson_complete", "quiz_complete", "assignment_submitted"],
+                })
+            tracks.append({
+                "id": f"{school['id']}-{track}",
+                "name": track.title(),
+                "level": track,
+                "semester_weeks": 16,
+                "certificate_title": f"{school['name']} {track.title()} Certificate",
+                "graduation_requirement": "Complete all modules, quizzes, assignments, attendance milestones, and final reflection.",
+                "course_id": base_course["id"],
+                "modules": modules,
+            })
+        programs.append({
+            "id": f"program-{school['id']}",
+            "school_id": school["id"],
+            "school_name": school["name"],
+            "professor": school["professor"],
+            "description": school["description"],
+            "semester_count": 4,
+            "tracks": tracks,
+            "graduation_pathway": ["Beginner", "Intermediate", "Advanced", "Mastery", "School Graduation"],
+        })
+    return programs
+
+
+PROGRAMS = generate_programs()
+
+EVENTS = [
+    {"id": "event-community-welcome", "title": "Community Welcome Meeting", "type": "community_meeting", "professor_id": "compass", "starts_at": "2026-06-15T18:00:00+00:00", "duration_minutes": 45, "languages": ["en", "es", "fr", "pt", "de", "ar"], "description": "A weekly orientation-style gathering for connection, safety, and next-step planning.", "replay_available": True},
+    {"id": "event-family-night", "title": "Family Recovery Night", "type": "workshop", "professor_id": "bridge", "starts_at": "2026-06-18T19:00:00+00:00", "duration_minutes": 60, "languages": ["en", "es", "fr", "pt", "de", "ar"], "description": "Boundary and repair workshop for family members and loved ones.", "replay_available": True},
+    {"id": "event-office-hope", "title": "Professor Hope Office Hours", "type": "office_hours", "professor_id": "hope", "starts_at": "2026-06-16T17:00:00+00:00", "duration_minutes": 50, "languages": ["en", "es", "fr", "pt", "de", "ar"], "description": "Personalized recovery questions, cravings support, and roadmap check-ins.", "replay_available": False},
+]
 
 PLANS = {
     "free": {"id": "free", "name": "Free", "amount": 0.0, "currency": "usd", "features": ["Limited courses", "Basic AI access"]},
@@ -448,6 +544,34 @@ class AdminTicketUpdateRequest(BaseModel):
     internal_note: Optional[str] = None
     public_reply: Optional[str] = None
 
+
+class AssignmentSubmissionRequest(BaseModel):
+    program_id: str
+    track_id: str
+    module_id: str
+    assignment_id: str
+    text_response: str = ""
+    file_ids: List[str] = []
+    language: str = "en"
+
+
+class EventRsvpRequest(BaseModel):
+    status: str = "going"
+    language: str = "en"
+
+
+class VoiceSessionRequest(BaseModel):
+    professor_id: str
+    mode: str = "voice"
+    language: str = "en"
+    class_id: Optional[str] = None
+
+
+class StudentProfileUpdateRequest(BaseModel):
+    preferred_language: Optional[str] = None
+    learning_preferences: Optional[List[str]] = None
+    privacy_controls: Dict[str, Any] = {}
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
@@ -456,6 +580,10 @@ async def root():
 
 @app.on_event("startup")
 async def seed_catalog() -> None:
+    try:
+        init_storage()
+    except Exception as exc:
+        logger.warning("Storage init deferred: %s", exc)
     for school in SCHOOLS:
         await db.schools.update_one({"id": school["id"]}, {"$set": school}, upsert=True)
     for course in COURSES:
@@ -466,6 +594,10 @@ async def seed_catalog() -> None:
         await db.pathways.update_one({"id": pathway["id"]}, {"$set": pathway}, upsert=True)
     for class_item in LIVE_CLASSES:
         await db.live_classes.update_one({"id": class_item["id"]}, {"$set": class_item}, upsert=True)
+    for program in PROGRAMS:
+        await db.programs.update_one({"id": program["id"]}, {"$set": program}, upsert=True)
+    for event in EVENTS:
+        await db.events.update_one({"id": event["id"]}, {"$set": event}, upsert=True)
 
 
 @api_router.post("/auth/register")
@@ -613,6 +745,211 @@ async def list_professors(user: Dict[str, Any] = Depends(get_current_user)):
 async def list_pathways(user: Dict[str, Any] = Depends(get_current_user)):
     pathways = await db.pathways.find({}, {"_id": 0}).to_list(100)
     return {"pathways": pathways, "languages": LANGUAGES}
+
+
+@api_router.get("/programs")
+async def list_programs(user: Dict[str, Any] = Depends(get_current_user)):
+    programs = await db.programs.find({}, {"_id": 0}).to_list(200)
+    progress = await db.program_progress.find({"user_id": user["id"]}, {"_id": 0}).to_list(500)
+    progress_map = {(item["program_id"], item["track_id"]): item for item in progress}
+    for program in programs:
+        for track in program.get("tracks", []):
+            track["progress"] = progress_map.get((program["id"], track["id"]), {"progress_percentage": 0, "completed_modules": []})
+    return {"programs": programs}
+
+
+@api_router.get("/programs/{program_id}")
+async def get_program(program_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+    program = await db.programs.find_one({"id": program_id}, {"_id": 0})
+    if not program:
+        raise HTTPException(status_code=404, detail="Program not found")
+    submissions = await db.assignment_submissions.find({"user_id": user["id"], "program_id": program_id}, {"_id": 0}).to_list(500)
+    return {"program": program, "submissions": submissions}
+
+
+@api_router.post("/assignments/submit")
+async def submit_assignment(payload: AssignmentSubmissionRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    program = await db.programs.find_one({"id": payload.program_id}, {"_id": 0})
+    if not program:
+        raise HTTPException(status_code=404, detail="Program not found")
+    submission = {"id": str(uuid.uuid4()), "user_id": user["id"], **payload.model_dump(), "status": "submitted", "score": None, "feedback": "Submitted. Your AI professor and support team can reference this progress.", "created_at": now_iso(), "updated_at": now_iso()}
+    await db.assignment_submissions.insert_one(submission.copy())
+    progress_doc = await db.program_progress.find_one({"user_id": user["id"], "program_id": payload.program_id, "track_id": payload.track_id}, {"_id": 0}) or {}
+    completed = set(progress_doc.get("completed_modules", []))
+    completed.add(payload.module_id)
+    track = next((track for track in program.get("tracks", []) if track["id"] == payload.track_id), None)
+    total_modules = max(len(track.get("modules", [])) if track else 4, 1)
+    progress_percentage = min(100, round((len(completed) / total_modules) * 100))
+    await db.program_progress.update_one(
+        {"user_id": user["id"], "program_id": payload.program_id, "track_id": payload.track_id},
+        {"$set": {"user_id": user["id"], "program_id": payload.program_id, "track_id": payload.track_id, "completed_modules": list(completed), "progress_percentage": progress_percentage, "updated_at": now_iso()}},
+        upsert=True,
+    )
+    certificate = None
+    if progress_percentage == 100 and track:
+        certificate = {"id": str(uuid.uuid4()), "user_id": user["id"], "course_id": payload.track_id, "course_title": track["certificate_title"], "student_name": user["name"], "completion_date": now_iso(), "type": "semester_track"}
+        await db.certificates.update_one({"user_id": user["id"], "course_id": payload.track_id}, {"$setOnInsert": certificate}, upsert=True)
+    return {"submission": submission, "progress_percentage": progress_percentage, "certificate": certificate}
+
+
+@api_router.get("/student/profile")
+async def student_profile(user: Dict[str, Any] = Depends(get_current_user)):
+    profile = await db.assessments.find_one({"user_id": user["id"]}, {"_id": 0}, sort=[("created_at", -1)])
+    documents = await db.files.find({"user_id": user["id"], "is_deleted": False}, {"_id": 0}).sort("created_at", -1).to_list(500)
+    progress = await db.program_progress.find({"user_id": user["id"]}, {"_id": 0}).to_list(500)
+    return {"user": public_user(user), "profile": profile, "documents": documents, "program_progress": progress, "privacy_controls": profile.get("privacy_controls", {}) if profile else {}}
+
+
+@api_router.get("/student/export")
+async def export_student_data(user: Dict[str, Any] = Depends(get_current_user)):
+    collections = {
+        "assessments": {"user_id": user["id"]},
+        "enrollments": {"user_id": user["id"]},
+        "program_progress": {"user_id": user["id"]},
+        "assignment_submissions": {"user_id": user["id"]},
+        "daily_checkins": {"user_id": user["id"]},
+        "journal_entries": {"user_id": user["id"]},
+        "certificates": {"user_id": user["id"]},
+        "ai_messages": {"user_id": user["id"]},
+        "class_attendance": {"user_id": user["id"]},
+        "event_rsvps": {"user_id": user["id"]},
+        "event_attendance": {"user_id": user["id"]},
+        "support_tickets": {"user_id": user["id"]},
+        "files": {"user_id": user["id"], "is_deleted": False},
+    }
+    export: Dict[str, Any] = {"exported_at": now_iso(), "student": public_user(user), "data_governance": {"encrypted_storage": True, "role_based_access": True, "soft_delete": True, "backup_policy": "Object storage and MongoDB metadata are structured for automated backup/disaster recovery workflows."}}
+    for name, query in collections.items():
+        export[name] = await getattr(db, name).find(query, {"_id": 0}).to_list(1000)
+    return export
+
+
+@api_router.post("/student/profile")
+async def update_student_profile(payload: StudentProfileUpdateRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    update = {"updated_at": now_iso()}
+    if payload.preferred_language:
+        update["preferred_language"] = payload.preferred_language
+    if payload.learning_preferences is not None:
+        update["learning_preferences"] = payload.learning_preferences
+    if payload.privacy_controls:
+        update["privacy_controls"] = payload.privacy_controls
+    await db.assessments.update_one({"user_id": user["id"]}, {"$set": update}, upsert=True)
+    return {"updated": True}
+
+
+@api_router.post("/files/upload")
+async def upload_file(
+    file: UploadFile = File(...),
+    purpose: str = Form("student_document"),
+    related_id: str = Form(""),
+    user: Dict[str, Any] = Depends(get_current_user),
+):
+    data = await file.read()
+    if len(data) > 25 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="File too large")
+    ext = safe_ext(file.filename or "file.bin")
+    storage_path = f"{APP_NAME}/uploads/{user['id']}/{purpose}/{uuid.uuid4()}.{ext}"
+    content_type = file.content_type or "application/octet-stream"
+    result = put_object(storage_path, data, content_type)
+    doc = {"id": str(uuid.uuid4()), "user_id": user["id"], "owner_role": "student", "purpose": purpose, "related_id": related_id, "storage_path": result["path"], "original_filename": file.filename, "content_type": content_type, "size": result.get("size", len(data)), "etag": result.get("etag"), "is_deleted": False, "encrypted": True, "access_roles": ["student", "admin"], "created_at": now_iso(), "updated_at": now_iso()}
+    await db.files.insert_one(doc.copy())
+    return {"file": doc}
+
+
+@api_router.get("/files")
+async def list_files(purpose: Optional[str] = None, user: Dict[str, Any] = Depends(get_current_user)):
+    query: Dict[str, Any] = {"is_deleted": False}
+    if user.get("role") != "admin":
+        query["user_id"] = user["id"]
+    if purpose:
+        query["purpose"] = purpose
+    files = await db.files.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return {"files": files}
+
+
+@api_router.get("/files/{file_id}/download")
+async def download_file(file_id: str, authorization: Optional[str] = Header(None), auth: Optional[str] = Query(None)):
+    token_header = authorization or (f"Bearer {auth}" if auth else "")
+    if not token_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Authentication required")
+    try:
+        payload = jwt.decode(token_header.replace("Bearer ", "", 1), JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.PyJWTError as exc:
+        raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
+    user = await db.users.find_one({"id": payload.get("sub")}, {"_id": 0, "password_hash": 0})
+    record = await db.files.find_one({"id": file_id, "is_deleted": False}, {"_id": 0})
+    if not user or not record:
+        raise HTTPException(status_code=404, detail="File not found")
+    if user.get("role") != "admin" and record.get("user_id") != user["id"]:
+        raise HTTPException(status_code=403, detail="File access denied")
+    data, content_type = get_object(record["storage_path"])
+    return Response(content=data, media_type=record.get("content_type", content_type), headers={"Content-Disposition": f"attachment; filename={record.get('original_filename', 'download')}"})
+
+
+@api_router.post("/files/{file_id}/delete")
+async def delete_file(file_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+    query = {"id": file_id, "is_deleted": False}
+    if user.get("role") != "admin":
+        query["user_id"] = user["id"]
+    result = await db.files.update_one(query, {"$set": {"is_deleted": True, "updated_at": now_iso()}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="File not found")
+    return {"deleted": True}
+
+
+@api_router.get("/events")
+async def list_events(user: Dict[str, Any] = Depends(get_current_user)):
+    events = await db.events.find({}, {"_id": 0}).sort("starts_at", 1).to_list(200)
+    rsvps = await db.event_rsvps.find({"user_id": user["id"]}, {"_id": 0}).to_list(200)
+    rsvp_map = {item["event_id"]: item for item in rsvps}
+    for event in events:
+        event["rsvp"] = rsvp_map.get(event["id"])
+        event["professor"] = PROFESSORS.get(event.get("professor_id"), {})
+    return {"events": events}
+
+
+@api_router.post("/events/{event_id}/rsvp")
+async def rsvp_event(event_id: str, payload: EventRsvpRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    event = await db.events.find_one({"id": event_id}, {"_id": 0})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    doc = {"id": str(uuid.uuid4()), "event_id": event_id, "user_id": user["id"], "status": payload.status, "language": payload.language, "created_at": now_iso(), "updated_at": now_iso()}
+    await db.event_rsvps.update_one({"event_id": event_id, "user_id": user["id"]}, {"$set": doc}, upsert=True)
+    return {"rsvp": doc}
+
+
+@api_router.post("/events/{event_id}/attend")
+async def attend_event(event_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+    event = await db.events.find_one({"id": event_id}, {"_id": 0})
+    if not event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    attendance = {"id": str(uuid.uuid4()), "event_id": event_id, "user_id": user["id"], "attended_at": now_iso(), "participation_count": 0}
+    await db.event_attendance.update_one({"event_id": event_id, "user_id": user["id"]}, {"$set": attendance}, upsert=True)
+    return {"attendance": attendance}
+
+
+@api_router.get("/replays")
+async def replay_library(user: Dict[str, Any] = Depends(get_current_user)):
+    classes = await db.live_classes.find({}, {"_id": 0}).to_list(100)
+    events = await db.events.find({"replay_available": True}, {"_id": 0}).to_list(100)
+    replays = [{"id": item["id"], "title": item["title"], "type": "class", "transcript": item.get("transcript"), "languages": item.get("languages", [])} for item in classes]
+    replays += [{"id": item["id"], "title": item["title"], "type": item.get("type"), "transcript": item.get("description"), "languages": item.get("languages", [])} for item in events]
+    return {"replays": replays}
+
+
+@api_router.post("/voice/session")
+async def create_voice_session(payload: VoiceSessionRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    professor = PROFESSORS.get(payload.professor_id)
+    if not professor:
+        raise HTTPException(status_code=404, detail="Professor not found")
+    profile = await db.assessments.find_one({"user_id": user["id"]}, {"_id": 0}, sort=[("created_at", -1)])
+    session = {"id": str(uuid.uuid4()), "user_id": user["id"], "professor_id": payload.professor_id, "mode": payload.mode, "language": payload.language, "class_id": payload.class_id, "provider": "openai_realtime_ready", "status": "text_tts_active_until_voice_key_added", "webrtc_ready": True, "avatar_ready": True, "voice_profile": professor.get("voice"), "avatar": professor.get("avatar"), "memory_context": {"student_name": user["name"], "profile": profile, "professor_style": professor.get("teaching_style")}, "created_at": now_iso()}
+    await db.voice_sessions.insert_one(session.copy())
+    return {"session": session, "activation_note": "Direct OpenAI Realtime credentials can activate live voice without rebuilding this architecture."}
+
+
+@api_router.get("/voice/professors")
+async def voice_professors(user: Dict[str, Any] = Depends(get_current_user)):
+    return {"professors": [{"id": key, **value, "voice_ready": True, "video_avatar_ready": True, "realtime_provider_ready": True} for key, value in PROFESSORS.items()]}
 
 
 @api_router.get("/learning-plan")

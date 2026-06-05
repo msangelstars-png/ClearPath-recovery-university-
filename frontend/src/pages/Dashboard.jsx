@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Award, Bell, BookOpen, Flame, LineChart, Sparkles, Target } from "lucide-react";
+import { Award, Bell, BookOpen, CalendarDays, FileArchive, Flame, GraduationCap, LineChart, Sparkles, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PageShell, StatTile, EmptyState } from "@/components/Layout";
@@ -62,6 +62,16 @@ export default function Dashboard() {
         <section className="rounded-2xl border border-brand-border bg-white p-6 lg:col-span-3" data-testid="notifications-card">
           <div className="flex items-center gap-2"><Bell className="text-brand-primary" size={20} /><h2 className="font-heading text-2xl font-medium text-brand-dark" data-testid="notifications-title">Notifications</h2></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">{data.notifications.map((note) => <div key={note} className="rounded-xl border border-brand-border p-4 text-sm text-brand-muted" data-testid={`notification-${note.toLowerCase().replaceAll(" ", "-")}`}>{note}</div>)}</div>
+        </section>
+        <section className="rounded-2xl border border-brand-border bg-white p-6 lg:col-span-5" data-testid="phase-two-quicklinks-card">
+          <h2 className="font-heading text-2xl font-medium text-brand-dark" data-testid="phase-two-quicklinks-title">University campus</h2>
+          <div className="mt-4 grid gap-3 md:grid-cols-5">
+            <Button asChild variant="outline" data-testid="dashboard-programs-link" className="rounded-full border-brand-border bg-white"><Link to="/programs"><GraduationCap size={16} /> Programs</Link></Button>
+            <Button asChild variant="outline" data-testid="dashboard-events-link" className="rounded-full border-brand-border bg-white"><Link to="/events"><CalendarDays size={16} /> Events</Link></Button>
+            <Button asChild variant="outline" data-testid="dashboard-replays-link" className="rounded-full border-brand-border bg-white"><Link to="/replays"><BookOpen size={16} /> Replays</Link></Button>
+            <Button asChild variant="outline" data-testid="dashboard-documents-link" className="rounded-full border-brand-border bg-white"><Link to="/documents"><FileArchive size={16} /> Documents</Link></Button>
+            <Button asChild variant="outline" data-testid="dashboard-voice-studio-link" className="rounded-full border-brand-border bg-white"><Link to="/voice-studio"><Sparkles size={16} /> Voice Studio</Link></Button>
+          </div>
         </section>
       </div>
     </PageShell>

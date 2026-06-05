@@ -68,7 +68,24 @@ export const platformApi = {
   replyTicket: (id, payload) => api.post(`/support/tickets/${id}/reply`, payload),
   adminTickets: () => api.get("/admin/support/tickets"),
   adminUpdateTicket: (id, payload) => api.post(`/admin/support/tickets/${id}`, payload),
+  programs: () => api.get("/programs"),
+  program: (id) => api.get(`/programs/${id}`),
+  submitAssignment: (payload) => api.post("/assignments/submit", payload),
+  studentProfile: () => api.get("/student/profile"),
+  exportStudentData: () => api.get("/student/export"),
+  updateStudentProfile: (payload) => api.post("/student/profile", payload),
+  uploadFile: (formData) => api.post("/files/upload", formData, { headers: { "Content-Type": "multipart/form-data" } }),
+  files: (purpose) => api.get("/files", { params: purpose ? { purpose } : {} }),
+  deleteFile: (id) => api.post(`/files/${id}/delete`),
+  events: () => api.get("/events"),
+  rsvpEvent: (id, payload) => api.post(`/events/${id}/rsvp`, payload),
+  attendEvent: (id) => api.post(`/events/${id}/attend`),
+  replays: () => api.get("/replays"),
+  voiceSession: (payload) => api.post("/voice/session", payload),
+  voiceProfessors: () => api.get("/voice/professors"),
 };
+
+export const fileDownloadUrl = (fileId) => `${API_BASE}/files/${fileId}/download?auth=${localStorage.getItem("clearpath_token")}`;
 
 export async function streamProfessorChat(payload, onChunk) {
   const token = localStorage.getItem("clearpath_token");
