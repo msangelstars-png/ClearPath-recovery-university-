@@ -360,6 +360,33 @@ LANGUAGES = [
     {"code": "ar", "name": "Arabic"},
 ]
 
+PRIMARY_RECOVERY_FOCUS_OPTIONS = [
+    "Alcohol", "Opioids", "Fentanyl", "Prescription Opioids", "Heroin", "Stimulants", "Methamphetamine", "Cocaine", "Crack Cocaine", "Cannabis", "Benzodiazepines", "Nicotine/Tobacco", "Gambling", "Gaming", "Pornography/Sexual Behavior", "Food and Eating Behaviors", "Multiple Substances", "Supporting a Loved One", "Mental Wellness Only", "Other",
+]
+
+FOCUS_PERSONALIZATION = {
+    "Alcohol": {"pathway": "early-recovery", "professor_id": "hope", "course_id": "recovery-foundations", "resource": "Alcohol-specific education, withdrawal awareness, trigger mapping, sober routines, relapse prevention, and real-world recovery experiences.", "assignment": "Map alcohol triggers, high-risk settings, support contacts, and a safer evening/weekend plan.", "reflection": "When does alcohol feel most connected to stress, celebration, loneliness, or routine?", "community": "Alcohol recovery skills circle"},
+    "Opioids": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Opioid-specific recovery education, overdose awareness, medication-assisted treatment education, safety planning, and relapse prevention resources.", "assignment": "Create an opioid safety plan that includes overdose awareness, support contacts, medication questions, and high-risk moments.", "reflection": "What support would make the next 24 hours safer for opioid-related risk?", "community": "Opioid recovery safety and support group"},
+    "Fentanyl": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Fentanyl-focused overdose awareness, harm-reduction education, urgent safety planning, treatment readiness, and support resources.", "assignment": "Build a fentanyl risk-reduction and emergency support plan with trusted contacts and local emergency resources.", "reflection": "What is one action that would reduce fentanyl-related danger today?", "community": "Fentanyl safety planning circle"},
+    "Prescription Opioids": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Prescription opioid education, tolerance/dependence awareness, medication conversations, taper-support questions, and relapse prevention.", "assignment": "List medication-related questions for a qualified professional and identify one safe support person.", "reflection": "What pattern do you notice around prescription opioid use and pain, stress, or sleep?", "community": "Medication recovery support circle"},
+    "Heroin": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Heroin-specific overdose awareness, stabilization planning, support readiness, MAT education, and relapse prevention.", "assignment": "Create a next-hour safety and support plan for heroin-related cravings or exposure.", "reflection": "Which situation most increases risk, and who can help before it escalates?", "community": "Opioid recovery safety and support group"},
+    "Stimulants": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "emotional-regulation", "resource": "Stimulant-specific craving management, sleep recovery, emotional regulation, nervous-system support, and real-world recovery experiences.", "assignment": "Track stimulant triggers, crash patterns, sleep needs, and emotional regulation tools for one week.", "reflection": "What feeling, pressure, or environment most often precedes stimulant urges?", "community": "Stimulant recovery regulation group"},
+    "Methamphetamine": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "emotional-regulation", "resource": "Methamphetamine-specific craving education, sleep restoration, emotional regulation, psychosis-risk awareness, and recovery planning.", "assignment": "Build a methamphetamine recovery stabilization plan focused on sleep, nutrition, support, and high-risk people/places.", "reflection": "What helps your nervous system settle after high stimulation or exhaustion?", "community": "Stimulant recovery regulation group"},
+    "Cocaine": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "emotional-regulation", "resource": "Cocaine-specific trigger awareness, craving wave planning, mood regulation, social-risk planning, and relapse prevention.", "assignment": "Map cocaine-related social, emotional, and financial triggers with replacement actions.", "reflection": "Which craving cue shows up first: emotion, place, person, money, or opportunity?", "community": "Stimulant recovery regulation group"},
+    "Crack Cocaine": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "emotional-regulation", "resource": "Crack cocaine-specific recovery education, urgent craving planning, environment changes, support routines, and emotional regulation.", "assignment": "Design a rapid craving interruption plan with exit steps, support calls, and grounding actions.", "reflection": "What is the earliest sign that a high-risk moment is building?", "community": "Stimulant recovery regulation group"},
+    "Cannabis": {"pathway": "life-skills", "professor_id": "compass", "course_id": "daily-life-systems", "resource": "Cannabis-specific habit awareness, motivation, sleep, anxiety, routine rebuilding, and relapse prevention.", "assignment": "Track cannabis use cues and design one replacement routine for evenings, sleep, or boredom.", "reflection": "What need is cannabis usually trying to meet for you?", "community": "Cannabis habit reset group"},
+    "Benzodiazepines": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Benzodiazepine-specific safety education, withdrawal-risk awareness, professional support planning, anxiety tools, and relapse prevention.", "assignment": "Write a medical-support question list and a calming plan that does not require sudden medication changes.", "reflection": "What anxiety or sleep pattern needs safer support?", "community": "Medication recovery support circle"},
+    "Nicotine/Tobacco": {"pathway": "life-skills", "professor_id": "compass", "course_id": "daily-life-systems", "resource": "Nicotine-specific cue awareness, replacement routines, craving timing, stress skills, and habit redesign.", "assignment": "Create a nicotine cue map with one replacement action for each common trigger.", "reflection": "Which nicotine cue is most automatic: stress, boredom, after meals, driving, or social moments?", "community": "Nicotine habit change group"},
+    "Gambling": {"pathway": "financial-freedom", "professor_id": "prosper", "course_id": "money-stability", "resource": "Gambling-specific urge planning, financial safeguards, accountability, trigger blocking, and repair routines.", "assignment": "Build a gambling safety plan with spending blocks, support accountability, and debt visibility.", "reflection": "What emotion or belief most often appears before gambling urges?", "community": "Gambling recovery accountability group"},
+    "Gaming": {"pathway": "life-skills", "professor_id": "compass", "course_id": "daily-life-systems", "resource": "Gaming-specific time boundaries, dopamine reset, sleep/routine rebuilding, and life-balance planning.", "assignment": "Design a gaming boundary plan with time limits, replacement activities, and accountability.", "reflection": "What does gaming help you avoid, feel, or control?", "community": "Digital balance group"},
+    "Pornography/Sexual Behavior": {"pathway": "relationships", "professor_id": "voice", "course_id": "healthy-relationships", "resource": "Compulsive sexual behavior education, shame reduction, trigger mapping, boundaries, repair, and healthy intimacy skills.", "assignment": "Map triggers, secrecy patterns, and one repair/boundary action that supports integrity.", "reflection": "What emotion or situation most often precedes sexual behavior you want to change?", "community": "Healthy intimacy recovery group"},
+    "Food and Eating Behaviors": {"pathway": "physical-wellness", "professor_id": "strength", "course_id": "body-recovery", "resource": "Food/eating behavior support, body care, emotional eating awareness, routine stabilization, and compassionate support planning.", "assignment": "Track eating-behavior triggers with body-care needs and one non-shaming support action.", "reflection": "What does your body or emotion need before the behavior happens?", "community": "Body care and food behavior support group"},
+    "Multiple Substances": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Multiple-substance safety planning, interaction-risk awareness, stabilization, support readiness, and layered relapse prevention.", "assignment": "Create a combined risk map covering substances, interactions, environments, and support contacts.", "reflection": "Which substance or situation creates the highest immediate risk?", "community": "Complex recovery planning group"},
+    "Supporting a Loved One": {"pathway": "family-member", "professor_id": "bridge", "course_id": "family-communication", "resource": "Family recovery education, boundaries, communication, safety planning, and support without rescuing.", "assignment": "Write one supportive boundary, one repair phrase, and one crisis/safety contact plan.", "reflection": "Where do love and over-responsibility feel tangled right now?", "community": "Family recovery support group"},
+    "Mental Wellness Only": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "emotional-regulation", "resource": "Mental wellness education, mood tracking, grounding, journaling, emotional regulation, and support planning.", "assignment": "Create a mood-pattern map with grounding tools and one weekly support routine.", "reflection": "Which mood pattern most needs compassion and structure?", "community": "Mental wellness practice group"},
+    "Other": {"pathway": "early-recovery", "professor_id": "hope", "course_id": "recovery-foundations", "resource": "Personalized recovery education combining universal principles, student-defined concerns, support planning, and next-step guidance.", "assignment": "Describe the concern in your own words and identify one support action for this week.", "reflection": "What would you most like ClearPath to understand about what brings you here?", "community": "Personalized recovery support group"},
+}
+
 PATHWAYS = [
     {"id": "active-addiction", "title": "Active Addiction Support", "professor_id": "hope", "level": "Beginner", "school_id": "active-addiction", "description": "Safety-first stabilization, support readiness, and next-hour planning."},
     {"id": "early-recovery", "title": "Recovery Foundations", "professor_id": "hope", "level": "Beginner", "school_id": "recovery", "description": "Core recovery education, cravings, routines, and support systems."},
@@ -476,6 +503,7 @@ class LoginRequest(BaseModel):
 
 
 class OnboardingRequest(BaseModel):
+    primary_recovery_focus: List[str] = []
     recovery_stage: str
     goals: List[str]
     learning_preferences: List[str]
@@ -646,16 +674,22 @@ def build_roadmap(profile: Dict[str, Any]) -> List[Dict[str, Any]]:
     stage = profile.get("recovery_stage", "Starting")
     goals = profile.get("goals", [])
     preferences = profile.get("learning_preferences", [])
+    focuses = profile.get("primary_recovery_focus") or []
+    primary_focus = focuses[0] if focuses else "Recovery"
+    focus_plan = FOCUS_PERSONALIZATION.get(primary_focus, FOCUS_PERSONALIZATION["Other"])
     return [
-        {"week": 1, "title": f"Stabilize your {stage.lower()} foundation", "actions": ["Complete Recovery Foundations", "Submit daily check-ins", "Start a private journal"]},
-        {"week": 2, "title": "Build emotional awareness", "actions": ["Study Emotional Regulation", "Track mood patterns", "Ask Professor Insight for reflection prompts"]},
-        {"week": 3, "title": "Translate goals into routines", "actions": [f"Practice: {goals[0] if goals else 'one realistic weekly goal'}", "Enroll in Life Skills", "Review streak progress"]},
-        {"week": 4, "title": "Strengthen support connections", "actions": ["Explore Family Recovery", f"Use your preferred learning mode: {', '.join(preferences[:2]) or 'short lessons'}", "Download certificates as courses finish"]},
+        {"week": 1, "title": f"Stabilize your {stage.lower()} foundation for {primary_focus.lower()}", "actions": [focus_plan["resource"], "Submit daily check-ins", "Start a private journal"]},
+        {"week": 2, "title": f"Map {primary_focus.lower()} triggers and recovery skills", "actions": [focus_plan["assignment"], "Track mood and craving patterns", f"Ask {PROFESSORS[focus_plan['professor_id']]['name']} for personalized guidance"]},
+        {"week": 3, "title": "Translate goals into routines", "actions": [f"Practice: {goals[0] if goals else 'one realistic weekly goal'}", f"Enroll in {focus_plan['course_id'].replace('-', ' ').title()}", "Review streak progress"]},
+        {"week": 4, "title": "Strengthen support, relapse prevention, and community", "actions": [focus_plan["reflection"], f"Join: {focus_plan['community']}", f"Use your preferred learning mode: {', '.join(preferences[:2]) or 'short lessons'}"]},
     ]
 
 
 def build_individual_learning_plan(profile: Dict[str, Any]) -> Dict[str, Any]:
     interests = profile.get("pathway_interests") or []
+    focuses = profile.get("primary_recovery_focus") or []
+    focus_paths = [FOCUS_PERSONALIZATION.get(focus, FOCUS_PERSONALIZATION["Other"])["pathway"] for focus in focuses]
+    interests = list(dict.fromkeys(focus_paths + interests))
     goals = profile.get("goals") or []
     preferences = profile.get("learning_preferences") or []
     stage = profile.get("recovery_stage", "Starting")
@@ -679,6 +713,8 @@ def build_individual_learning_plan(profile: Dict[str, Any]) -> Dict[str, Any]:
         "id": str(uuid.uuid4()),
         "stage": stage,
         "primary_goal": goals[0] if goals else "Build steady progress",
+        "primary_recovery_focus": focuses,
+        "specialized_content": [FOCUS_PERSONALIZATION.get(focus, FOCUS_PERSONALIZATION["Other"])["resource"] for focus in focuses],
         "preferred_learning": preferences,
         "language": profile.get("preferred_language", "en"),
         "weekly_plan": weekly,
@@ -706,6 +742,7 @@ async def save_onboarding(payload: OnboardingRequest, user: Dict[str, Any] = Dep
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
         "recovery_stage": payload.recovery_stage,
+        "primary_recovery_focus": payload.primary_recovery_focus,
         "goals": payload.goals,
         "learning_preferences": payload.learning_preferences,
         "support_focus": payload.support_focus,
@@ -762,6 +799,11 @@ async def list_professors(user: Dict[str, Any] = Depends(get_current_user)):
 async def list_pathways(user: Dict[str, Any] = Depends(get_current_user)):
     pathways = await db.pathways.find({}, {"_id": 0}).to_list(100)
     return {"pathways": pathways, "languages": LANGUAGES}
+
+
+@api_router.get("/onboarding/options")
+async def onboarding_options():
+    return {"primary_recovery_focus_options": PRIMARY_RECOVERY_FOCUS_OPTIONS, "stage_options": ["Actively using", "Thinking about change", "Preparing to quit", "Early recovery", "Maintaining recovery", "Returning after relapse", "Supporting a loved one"], "focus_personalization": FOCUS_PERSONALIZATION}
 
 
 @api_router.get("/programs")
@@ -1131,19 +1173,29 @@ async def dashboard(user: Dict[str, Any] = Depends(get_current_user)):
     ]
     if profile and profile.get("goals"):
         recommendations.insert(0, f"Focus this week: {profile['goals'][0]}")
+    focus_recommendations = []
+    if profile and profile.get("primary_recovery_focus"):
+        for focus in profile.get("primary_recovery_focus", [])[:3]:
+            focus_plan = FOCUS_PERSONALIZATION.get(focus, FOCUS_PERSONALIZATION["Other"])
+            focus_recommendations.append({"focus": focus, "resource": focus_plan["resource"], "assignment": focus_plan["assignment"], "reflection": focus_plan["reflection"], "community": focus_plan["community"]})
+            recommendations.insert(0, f"{focus} focus: {focus_plan['resource']}")
     recommended_course = None
     assigned_professor = None
     if profile:
         interests = profile.get("pathway_interests") or []
-        selected_pathway = next((pathway for pathway in PATHWAYS if pathway["id"] in interests), None) or PATHWAYS[0]
-        recommended_course = next((course for course in courses if course.get("school_id") == selected_pathway.get("school_id")), None) or (courses[0] if courses else None)
-        assigned_professor = PROFESSORS.get(selected_pathway.get("professor_id"), PROFESSORS["hope"])
+        focuses = profile.get("primary_recovery_focus") or []
+        focus_plan = FOCUS_PERSONALIZATION.get(focuses[0], FOCUS_PERSONALIZATION["Other"]) if focuses else None
+        selected_pathway = next((pathway for pathway in PATHWAYS if pathway["id"] in interests), None) or next((pathway for pathway in PATHWAYS if focus_plan and pathway["id"] == focus_plan["pathway"]), None) or PATHWAYS[0]
+        recommended_course = next((course for course in courses if focus_plan and course.get("id") == focus_plan["course_id"]), None) or next((course for course in courses if course.get("school_id") == selected_pathway.get("school_id")), None) or (courses[0] if courses else None)
+        assigned_professor = PROFESSORS.get((focus_plan or {}).get("professor_id") or selected_pathway.get("professor_id"), PROFESSORS["hope"])
     first_visit_experience = {
         "is_first_session": is_first_dashboard_visit,
         "welcome_message": f"Welcome to ClearPath, {user['name']}" if is_first_dashboard_visit else f"Welcome back, {user['name']}",
         "roadmap_summary": profile.get("roadmap", [])[:4] if profile else [],
         "recommended_first_course": recommended_course,
         "assigned_ai_professor": assigned_professor,
+        "primary_recovery_focus": profile.get("primary_recovery_focus", []) if profile else [],
+        "focus_recommendations": focus_recommendations,
         "next_steps": [
             "Review your personalized roadmap",
             "Enroll in your recommended first course",
@@ -1165,6 +1217,7 @@ async def dashboard(user: Dict[str, Any] = Depends(get_current_user)):
         "open_tickets": [ticket for ticket in tickets if ticket.get("status") not in ["Resolved", "Closed"]],
         "learning_plan": profile.get("individual_learning_plan") if profile else None,
         "recommendations": recommendations,
+        "focus_recommendations": focus_recommendations,
         "notifications": ["Your personalized roadmap is ready", "Daily reflection reminder", "New lesson recommendation available"],
     }
 
@@ -1191,12 +1244,16 @@ async def ai_chat_stream(payload: AIChatRequest, user: Dict[str, Any] = Depends(
         journals = await db.journal_entries.find({"user_id": user["id"]}, {"_id": 0, "content": 1, "sentiment": 1, "tags": 1}).sort("created_at", -1).to_list(3)
     await db.ai_messages.insert_one({"id": str(uuid.uuid4()), "user_id": user["id"], "professor_id": payload.professor_id, "role": "user", "content": payload.message, "created_at": now_iso()})
 
+    focus_context = []
+    if profile and profile.get("primary_recovery_focus"):
+        focus_context = [FOCUS_PERSONALIZATION.get(focus, FOCUS_PERSONALIZATION["Other"]) for focus in profile.get("primary_recovery_focus", [])]
     system_message = (
         f"You are {professor['name']}, an AI professor at ClearPath Recovery University. "
         f"Focus on {professor['focus']}. Be warm, practical, trauma-informed, non-clinical, and concise. "
         f"Your personality: {professor.get('personality')}. Teaching style: {professor.get('teaching_style')}. "
         "Never claim to be emergency care; if crisis risk is mentioned, encourage contacting local emergency services or trusted support. "
         f"Greet returning students by name ({user['name']}) and reference progress when relevant. "
+        f"Personalize for primary recovery focus using universal recovery principles plus specialized education. Focus-specific guidance: {focus_context}. "
         f"Student profile: {profile or {}}. Recent check-ins: {recent_checkins}. Enrollments: {enrollments}. Journal insights if permitted: {journals}."
     )
 

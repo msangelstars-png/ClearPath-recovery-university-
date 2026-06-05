@@ -71,6 +71,10 @@ export default function Dashboard() {
             <h3 className="font-heading text-xl text-brand-dark">Next steps</h3>
             <div className="mt-3 grid gap-2 md:grid-cols-4">{(firstVisit.next_steps || []).map((step) => <div key={step} className="flex items-center gap-2 text-sm text-brand-charcoal" data-testid={`first-visit-step-${step.toLowerCase().replaceAll(" ", "-")}`}><ArrowRight size={14} className="text-brand-primary" /> {step}</div>)}</div>
           </div>
+          <div className="mt-5 rounded-xl border border-brand-border p-4" data-testid="first-visit-focus-personalization">
+            <h3 className="font-heading text-xl text-brand-dark">Focus-specific personalization</h3>
+            <div className="mt-3 grid gap-3 md:grid-cols-2">{(firstVisit.focus_recommendations || []).map((item) => <article key={item.focus} className="rounded-lg bg-brand-card p-4" data-testid={`first-visit-focus-${item.focus.toLowerCase().replaceAll("/", "-").replaceAll(" ", "-")}`}><p className="font-medium text-brand-dark">{item.focus}</p><p className="mt-2 text-sm text-brand-charcoal">{item.resource}</p><p className="mt-2 text-xs text-brand-muted">Community: {item.community}</p></article>)}</div>
+          </div>
         </section>
       )}
       <div className="grid gap-6 md:grid-cols-4" data-testid="dashboard-stat-grid">

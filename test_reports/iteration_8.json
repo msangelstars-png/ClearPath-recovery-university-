@@ -1,0 +1,51 @@
+{
+  "summary": "Validated onboarding primary recovery focus personalization end-to-end across backend APIs and UI. Core requested flows pass: focus-first onboarding, multi-select behavior, exact stage options, onboarding->dashboard transition, focus-personalized first-visit dashboard/course/professor/learning-plan, AI chat stream continuity, and returning-user transition after first visit mark. One backend validation gap remains.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "/api/onboarding",
+        "issue": "Backend accepts empty primary_recovery_focus list (200 OK). Requirement states primary focus should be required before continuing onboarding. UI enforces it, but API contract currently does not."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_onboarding_primary_focus_personalization.py",
+    "/app/backend/tests/test_dashboard_first_session_flags.py",
+    "/app/test_reports/pytest/pytest_results_iteration_8.xml",
+    "/app/test_reports/pytest/pytest_results_iteration_8_focus.xml",
+    "/root/.emergent/automation_output/20260605_045947/console_20260605_045947.log",
+    "/root/.emergent/automation_output/20260605_050015/console_20260605_050015.log"
+  ],
+  "action_items": [
+    "Enforce backend validation for onboarding primary_recovery_focus (non-empty, ideally validate values against PRIMARY_RECOVERY_FOCUS_OPTIONS).",
+    "Keep first-session transition timing in mind for UI assertions (dashboard mark-visited runs asynchronously after initial load)."
+  ],
+  "critical_code_review_comments": [
+    "OnboardingRequest uses primary_recovery_focus: List[str] = [] with no minimum length/value validation, creating API/UI contract mismatch.",
+    "server.py remains large (>700 lines) and concentrates cross-cutting onboarding/dashboard/AI logic, increasing regression risk."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_onboarding_primary_focus_personalization.py",
+    "/app/test_reports/iteration_8.json"
+  ],
+  "success_rate": {
+    "backend": "92% (13/13 targeted tests passed; 1 requirement-level validation gap identified via passing behavior)",
+    "frontend": "95% (all targeted onboarding/dashboard UI checks passed after accounting for mark-visited async timing)"
+  },
+  "test_credentials": "Read and used /app/memory/test_credentials.md credentials for seeded-user regression verification.",
+  "seed_data_creation": "Created new test users via /api/auth/register and UI registration for isolated onboarding personalization validation.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Primary-focus personalization is functioning in API and UI for Alcohol+Opioids path. Added reusable regression suite at /app/backend/tests/test_onboarding_primary_focus_personalization.py. Remaining known gap is API-side required validation for empty primary_recovery_focus.",
+  "rca of the issue": "RCA (validation gap): OnboardingRequest model defines primary_recovery_focus with default empty list and no Field(min_length=1), so /api/onboarding accepts [] despite product requirement that focus be required. Repro: register -> POST /api/onboarding with primary_recovery_focus: [] -> 200 with profile.primary_recovery_focus=[] returned.",
+  "mocked_api": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  }
+}
