@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { PageShell, StatTile, EmptyState } from "@/components/Layout";
 import { platformApi } from "@/services/api";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
@@ -48,6 +49,7 @@ export default function Dashboard() {
     <PageShell eyebrow={data.is_first_session ? "Your first day at ClearPath" : "Student dashboard"} title={welcomeTitle} action={<Button asChild data-testid="dashboard-ai-action" className="rounded-full bg-brand-primary text-white hover:bg-brand-primaryHover"><Link to="/ai-professors"><Sparkles size={16} /> Ask a professor</Link></Button>}>
       {paymentMessage && <div className="mb-6 rounded-2xl border border-brand-success/30 bg-green-50 p-4 text-brand-success" data-testid="payment-status-message">{paymentMessage}</div>}
       {data.trial?.active && <div className="mb-6 rounded-2xl border border-brand-primary/30 bg-brand-card p-5" data-testid="premium-trial-banner"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">7-day Premium trial active</p><h2 className="mt-2 font-heading text-2xl text-brand-dark" data-testid="premium-trial-days">{data.trial.days_remaining} days remaining</h2><p className="mt-1 text-sm text-brand-muted">Full access is unlocked during your trial — schools, AI professors, courses, events, assignments, certificates, journals, and premium features.</p></div>}
+      <section className="mb-6 flex flex-col gap-4 rounded-2xl border border-brand-border bg-white p-5 sm:flex-row sm:items-center sm:justify-between" data-testid="dashboard-profile-strip"><div className="flex items-center gap-4"><UserAvatar user={data.user} size="lg" testId="dashboard-user-avatar" /><div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">Student profile</p><h2 className="font-heading text-2xl text-brand-dark" data-testid="dashboard-profile-name">{data.user.display_name || data.user.name}</h2><p className="text-sm text-brand-muted" data-testid="dashboard-profile-visibility">{data.user.profile_visibility} profile · {data.user.language_preference}</p></div></div><Button asChild variant="outline" data-testid="dashboard-edit-profile-button" className="rounded-full border-brand-border bg-white"><Link to="/profile">Edit profile</Link></Button></section>
       {data.is_first_session && (
         <section className="mb-6 rounded-2xl border border-brand-border bg-white p-6" data-testid="first-visit-welcome-panel">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary" data-testid="first-visit-label">Your university orientation</p>

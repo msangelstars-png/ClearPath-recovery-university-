@@ -1,8 +1,9 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { BookOpen, GraduationCap, LogOut, Menu, Sparkles } from "lucide-react";
+import { Award, BookOpen, CreditCard, FileArchive, GraduationCap, LifeBuoy, LogOut, Menu, Settings, Sparkles, TrendingUp, User } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
+import UserAvatar from "@/components/UserAvatar";
 
 const navItems = [
   ["Dashboard", "/dashboard"],
@@ -31,6 +32,16 @@ export function TopNav() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const accountItems = [
+    ["My Profile", "/profile", User],
+    ["My Progress", "/roadmap", TrendingUp],
+    ["My Certificates", "/certificates", Award],
+    ["My Documents", "/documents", FileArchive],
+    ["Subscription & Billing", "/plans", CreditCard],
+    ["Settings", "/settings", Settings],
+    ["Support", "/support", LifeBuoy],
+  ];
   return (
     <header className="sticky top-0 z-40 max-w-full overflow-x-hidden border-b border-brand-border bg-brand-base/95 backdrop-blur-md" data-testid="top-navigation">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-4 sm:px-6 lg:px-8">
@@ -48,7 +59,10 @@ export function TopNav() {
           {!user ? (
             <Button onClick={() => navigate("/auth")} data-testid="nav-start-button" className="rounded-full bg-brand-primary px-5 text-white hover:bg-brand-primaryHover"><Sparkles size={16} /> Start</Button>
           ) : (
-            <Button variant="outline" onClick={() => { logout(); navigate("/"); }} data-testid="logout-button" className="h-10 w-10 rounded-full border-brand-border bg-white p-0 sm:w-auto sm:px-4"><LogOut size={16} /> <span className="hidden sm:inline">Logout</span></Button>
+            <div className="relative" data-testid="account-menu-container">
+              <button onClick={() => setProfileOpen(!profileOpen)} data-testid="account-menu-button" className="flex items-center gap-2 rounded-full border border-brand-border bg-white px-2 py-1.5 text-sm text-brand-charcoal shadow-sm"><UserAvatar user={user} size="sm" testId="nav-user-avatar" /><span className="hidden max-w-[120px] truncate sm:inline">{user.display_name || user.name}</span></button>
+              {profileOpen && <div className="absolute right-0 top-12 z-50 w-72 rounded-2xl border border-brand-border bg-white p-3 shadow-xl" data-testid="account-menu-dropdown"><div className="mb-3 flex items-center gap-3 rounded-xl bg-brand-card p-3"><UserAvatar user={user} size="md" testId="account-menu-avatar" /><div><p className="font-heading font-medium text-brand-dark" data-testid="account-menu-name">{user.display_name || user.name}</p><p className="text-xs text-brand-muted" data-testid="account-menu-email">{user.email}</p></div></div>{accountItems.map(([label, href, Icon]) => <Link key={href} to={href} onClick={() => setProfileOpen(false)} data-testid={`account-menu-${label.toLowerCase().replaceAll(" & ", "-").replaceAll(" ", "-")}`} className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-brand-charcoal hover:bg-brand-card"><Icon size={16} /> {label}</Link>)}<button onClick={() => { logout(); setProfileOpen(false); navigate("/"); }} data-testid="account-menu-logout" className="mt-2 flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-brand-error hover:bg-red-50"><LogOut size={16} /> Logout</button></div>}
+            </div>
           )}
           <Button variant="ghost" onClick={() => setMobileOpen(!mobileOpen)} data-testid="mobile-menu-button" className="xl:hidden"><Menu size={18} /></Button>
         </div>

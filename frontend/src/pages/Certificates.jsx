@@ -4,8 +4,11 @@ import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/Layout";
 import { platformApi } from "@/services/api";
 import { media } from "@/data/platform";
+import { useAuth } from "@/context/AuthContext";
+import UserAvatar from "@/components/UserAvatar";
 
 export default function Certificates() {
+  const { user } = useAuth();
   const [certificates, setCertificates] = useState([]);
   const [error, setError] = useState("");
   const [download, setDownload] = useState("");
@@ -16,7 +19,7 @@ export default function Certificates() {
       {error && <div className="mb-6 rounded-2xl border border-brand-border bg-white p-4 text-brand-error" data-testid="certificates-error-message">{error}</div>}
       {download && <div className="mb-6 rounded-2xl border border-brand-border bg-white p-4 text-brand-success" data-testid="certificate-download-message">{download}</div>}
       <div className="grid gap-6 md:grid-cols-2" data-testid="certificates-grid">
-        {certificates.map((certificate) => <article key={certificate.id} className="relative overflow-hidden rounded-2xl border border-brand-border bg-white p-8" data-testid={`certificate-card-${certificate.id}`}><img src={media.texture} alt="Warm sand texture" className="absolute inset-0 h-full w-full object-cover opacity-10" data-testid={`certificate-background-${certificate.id}`} /><div className="relative"><Award className="mb-5 text-brand-primary" size={40} /><p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary" data-testid={`certificate-label-${certificate.id}`}>Certificate of completion</p><h2 className="mt-3 font-heading text-3xl font-semibold text-brand-dark" data-testid={`certificate-course-${certificate.id}`}>{certificate.course_title}</h2><p className="mt-6 text-brand-charcoal" data-testid={`certificate-student-${certificate.id}`}>Awarded to {certificate.student_name}</p><Button onClick={() => downloadCertificate(certificate.id)} data-testid={`download-certificate-button-${certificate.id}`} className="mt-5 rounded-full bg-brand-primary text-white hover:bg-brand-primaryHover">Download certificate</Button></div></article>)}
+        {certificates.map((certificate) => <article key={certificate.id} className="relative overflow-hidden rounded-2xl border border-brand-border bg-white p-8" data-testid={`certificate-card-${certificate.id}`}><img src={media.texture} alt="Warm sand texture" className="absolute inset-0 h-full w-full object-cover opacity-10" data-testid={`certificate-background-${certificate.id}`} /><div className="relative"><UserAvatar user={user} size="lg" testId={`certificate-avatar-${certificate.id}`} /><Award className="mb-5 mt-4 text-brand-primary" size={40} /><p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary" data-testid={`certificate-label-${certificate.id}`}>Certificate of completion</p><h2 className="mt-3 font-heading text-3xl font-semibold text-brand-dark" data-testid={`certificate-course-${certificate.id}`}>{certificate.course_title}</h2><p className="mt-6 text-brand-charcoal" data-testid={`certificate-student-${certificate.id}`}>Awarded to {user?.display_name || certificate.student_name}</p><Button onClick={() => downloadCertificate(certificate.id)} data-testid={`download-certificate-button-${certificate.id}`} className="mt-5 rounded-full bg-brand-primary text-white hover:bg-brand-primaryHover">Download certificate</Button></div></article>)}
         {certificates.length === 0 && <div className="rounded-2xl border border-brand-border bg-white p-8 text-center" data-testid="empty-certificates-state">Complete a course to earn your first certificate.</div>}
       </div>
     </PageShell>

@@ -46,6 +46,12 @@ export function AuthProvider({ children }) {
       clearSession();
       setUser(null);
     },
+    async refreshUser() {
+      const { data } = await authApi.me();
+      localStorage.setItem("clearpath_user", JSON.stringify(data.user));
+      setUser(data.user);
+      return data.user;
+    },
     setUser,
   }), [user, loading]);
 

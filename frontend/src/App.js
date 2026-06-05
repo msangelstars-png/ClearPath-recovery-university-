@@ -25,6 +25,8 @@ import Tickets from "@/pages/Tickets";
 import ContactCenter from "@/pages/ContactCenter";
 import Documents from "@/pages/Documents";
 import Certificates from "@/pages/Certificates";
+import Profile from "@/pages/Profile";
+import Settings from "@/pages/Settings";
 import Preview from "@/pages/Preview";
 import Admin from "@/pages/Admin";
 import AdminSupport from "@/pages/AdminSupport";
@@ -58,6 +60,8 @@ function App() {
           <Route path="/contact-center" element={<ProtectedRoute><ContactCenter /></ProtectedRoute>} />
           <Route path="/documents" element={<ProtectedRoute><Documents /></ProtectedRoute>} />
           <Route path="/certificates" element={<ProtectedRoute><Certificates /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+          <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
           <Route path="/admin/support" element={<ProtectedRoute adminOnly><AdminSupport /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />

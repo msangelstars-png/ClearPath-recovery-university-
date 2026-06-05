@@ -48,6 +48,13 @@ STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
 APP_NAME = "clearpath-recovery-university"
 storage_key: Optional[str] = None
 
+DEFAULT_AVATARS = [
+    {"id": "recovery-student", "name": "Recovery Path", "style": "recovery-themed", "url": "https://static.prod-images.emergentagent.com/jobs/f8971345-de4d-4a63-bdd2-6d8004eb4bfc/images/de76ff583e5921ebf75135e7c1e87a5b063c83284e877cc0ef7b94c10fae30a3.png"},
+    {"id": "family-support", "name": "Family Support", "style": "recovery-themed", "url": "https://static.prod-images.emergentagent.com/jobs/f8971345-de4d-4a63-bdd2-6d8004eb4bfc/images/ede56eaa14885b2adb92ce11ba50179c79ac69a62990fb96a5b47d6acac28eca.png"},
+    {"id": "wellness", "name": "Wellness Focus", "style": "modern illustrated", "url": "https://static.prod-images.emergentagent.com/jobs/f8971345-de4d-4a63-bdd2-6d8004eb4bfc/images/0222ec47cb6214aa2fe3351b9ff64455cc69fe65080d7ffb4d3b8e5f97494905.png"},
+    {"id": "professional", "name": "Professional Growth", "style": "professional", "url": "https://static.prod-images.emergentagent.com/jobs/f8971345-de4d-4a63-bdd2-6d8004eb4bfc/images/0b4e8f781cc6acb69d0952502ee50989638b899fb0109cdf6c6c8d316b9f7fdc.png"},
+]
+
 # Create the main app without a prefix
 app = FastAPI()
 
@@ -125,10 +132,21 @@ def safe_ext(filename: str) -> str:
 
 
 def public_user(user: Dict[str, Any]) -> Dict[str, Any]:
+    display_name = user.get("preferred_name") or user.get("name")
     return {
         "id": user["id"],
         "email": user["email"],
         "name": user["name"],
+        "preferred_name": user.get("preferred_name"),
+        "display_name": display_name,
+        "bio": user.get("bio", ""),
+        "time_zone": user.get("time_zone", "UTC"),
+        "language_preference": user.get("language_preference", "en"),
+        "profile_visibility": user.get("profile_visibility", "private"),
+        "avatar_url": user.get("avatar_url"),
+        "avatar_type": user.get("avatar_type", "initials"),
+        "avatar_style": user.get("avatar_style", "initials"),
+        "initials": "".join([part[:1] for part in display_name.split()[:2]]).upper() or "CP",
         "role": user.get("role", "student"),
         "subscription_status": user.get("subscription_status", "free"),
         "premium_access": has_premium_access(user),
@@ -740,6 +758,32 @@ class StudentProfileUpdateRequest(BaseModel):
     learning_preferences: Optional[List[str]] = None
     privacy_controls: Dict[str, Any] = {}
 
+
+class ProfileUpdateRequest(BaseModel):
+    name: Optional[str] = None
+    preferred_name: Optional[str] = None
+    language_preference: Optional[str] = None
+    bio: Optional[str] = Field(default=None, max_length=800)
+    goals: Optional[List[str]] = None
+    time_zone: Optional[str] = None
+    profile_visibility: Optional[str] = None
+
+    @field_validator("profile_visibility")
+    @classmethod
+    def validate_visibility(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        if value not in ["public", "community", "private"]:
+            raise ValueError("Unsupported profile visibility")
+        return value
+
+
+class AvatarSelectRequest(BaseModel):
+    avatar_id: Optional[str] = None
+    avatar_url: Optional[str] = None
+    avatar_type: str = "default"
+    avatar_style: str = "recovery-themed"
+
 # Add your routes to the router instead of directly to app
 @api_router.get("/")
 async def root():
@@ -1029,7 +1073,69 @@ async def student_profile(user: Dict[str, Any] = Depends(get_current_user)):
     profile = await db.assessments.find_one({"user_id": user["id"]}, {"_id": 0}, sort=[("created_at", -1)])
     documents = await db.files.find({"user_id": user["id"], "is_deleted": False}, {"_id": 0}).sort("created_at", -1).to_list(500)
     progress = await db.program_progress.find({"user_id": user["id"]}, {"_id": 0}).to_list(500)
-    return {"user": public_user(user), "profile": profile, "documents": documents, "program_progress": progress, "privacy_controls": profile.get("privacy_controls", {}) if profile else {}}
+    return {"user": public_user(user), "profile": profile, "documents": documents, "program_progress": progress, "privacy_controls": profile.get("privacy_controls", {}) if profile else {}, "default_avatars": DEFAULT_AVATARS}
+
+
+@api_router.get("/profile")
+async def get_profile(user: Dict[str, Any] = Depends(get_current_user)):
+    profile = await db.assessments.find_one({"user_id": user["id"]}, {"_id": 0}, sort=[("created_at", -1)])
+    certificates = await db.certificates.find({"user_id": user["id"]}, {"_id": 0}).to_list(100)
+    progress = await db.program_progress.find({"user_id": user["id"]}, {"_id": 0}).to_list(500)
+    return {"user": public_user(user), "profile": profile, "certificates_count": len(certificates), "program_progress": progress, "default_avatars": DEFAULT_AVATARS}
+
+
+@api_router.post("/profile")
+async def update_profile(payload: ProfileUpdateRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    update: Dict[str, Any] = {"updated_at": now_iso()}
+    for field in ["name", "preferred_name", "language_preference", "bio", "time_zone", "profile_visibility"]:
+        value = getattr(payload, field)
+        if value is not None:
+            update[field] = value
+    if payload.goals is not None:
+        await db.assessments.update_one({"user_id": user["id"]}, {"$set": {"goals": payload.goals, "updated_at": now_iso()}}, upsert=True)
+    await db.users.update_one({"id": user["id"]}, {"$set": update})
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
+    return {"user": public_user(fresh)}
+
+
+@api_router.get("/profile/avatars")
+async def list_default_avatars(user: Dict[str, Any] = Depends(get_current_user)):
+    return {"avatars": DEFAULT_AVATARS}
+
+
+@api_router.post("/profile/avatar")
+async def select_avatar(payload: AvatarSelectRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    avatar_url = payload.avatar_url
+    avatar_style = payload.avatar_style
+    if payload.avatar_id:
+        avatar = next((item for item in DEFAULT_AVATARS if item["id"] == payload.avatar_id), None)
+        if not avatar:
+            raise HTTPException(status_code=404, detail="Avatar not found")
+        avatar_url = avatar["url"]
+        avatar_style = avatar["style"]
+    if payload.avatar_type != "initials" and not avatar_url:
+        raise HTTPException(status_code=400, detail="Avatar URL required")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"avatar_url": avatar_url, "avatar_type": payload.avatar_type, "avatar_style": avatar_style, "updated_at": now_iso()}})
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
+    return {"user": public_user(fresh)}
+
+
+@api_router.post("/profile/photo")
+async def upload_profile_photo(file: UploadFile = File(...), user: Dict[str, Any] = Depends(get_current_user)):
+    data = await file.read()
+    if len(data) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Profile photo too large")
+    content_type = file.content_type or "application/octet-stream"
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Profile photo must be an image")
+    storage_path = f"{APP_NAME}/uploads/{user['id']}/profile_photo/{uuid.uuid4()}.{safe_ext(file.filename or 'photo.png')}"
+    result = put_object(storage_path, data, content_type)
+    file_doc = {"id": str(uuid.uuid4()), "user_id": user["id"], "owner_role": "student", "purpose": "profile_photo", "related_id": user["id"], "storage_path": result["path"], "original_filename": file.filename, "content_type": content_type, "size": result.get("size", len(data)), "etag": result.get("etag"), "is_deleted": False, "encrypted": True, "access_roles": ["student", "admin"], "created_at": now_iso(), "updated_at": now_iso()}
+    await db.files.insert_one(file_doc.copy())
+    avatar_url = f"/api/files/{file_doc['id']}/download"
+    await db.users.update_one({"id": user["id"]}, {"$set": {"avatar_url": avatar_url, "avatar_type": "upload", "avatar_style": "personal-photo", "updated_at": now_iso()}})
+    fresh = await db.users.find_one({"id": user["id"]}, {"_id": 0, "password_hash": 0})
+    return {"user": public_user(fresh), "file": file_doc}
 
 
 @api_router.get("/student/export")
