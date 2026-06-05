@@ -692,6 +692,16 @@ def build_individual_learning_plan(profile: Dict[str, Any]) -> Dict[str, Any]:
 
 @api_router.post("/onboarding")
 async def save_onboarding(payload: OnboardingRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    has_existing_onboarding = bool(user.get("has_completed_onboarding", user.get("onboarding_complete", False)))
+    has_seen_dashboard = bool(user.get("has_visited_dashboard", user.get("dashboard_visit_count", 0) > 0))
+    user_update = {
+        "onboarding_complete": True,
+        "has_completed_onboarding": True,
+        "onboarding_completed_at": user.get("onboarding_completed_at") or now_iso(),
+        "updated_at": now_iso(),
+    }
+    if not has_existing_onboarding and not has_seen_dashboard:
+        user_update.update({"has_completed_first_login": False, "has_visited_dashboard": False, "dashboard_visit_count": 0})
     profile = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
@@ -708,7 +718,7 @@ async def save_onboarding(payload: OnboardingRequest, user: Dict[str, Any] = Dep
     }
     profile["individual_learning_plan"] = build_individual_learning_plan(profile)
     await db.assessments.insert_one(profile.copy())
-    await db.users.update_one({"id": user["id"]}, {"$set": {"onboarding_complete": True, "has_completed_onboarding": True, "has_completed_first_login": False, "has_visited_dashboard": False, "dashboard_visit_count": 0, "onboarding_completed_at": now_iso(), "updated_at": now_iso()}})
+    await db.users.update_one({"id": user["id"]}, {"$set": user_update})
     await db.ai_memories.update_one(
         {"user_id": user["id"]},
         {"$set": {"user_id": user["id"], "profile": profile, "updated_at": now_iso()}},

@@ -152,26 +152,28 @@ def test_user_flags_progression_in_me_endpoint(api_client: requests.Session):
     assert user_after_mark["has_visited_dashboard"] is True
 
 
-def _read_student_credentials() -> Tuple[str, str]:
+def _read_user_credentials(role: str) -> Tuple[str, str]:
     creds_path = "/app/memory/test_credentials.md"
     if not os.path.exists(creds_path):
         pytest.skip("/app/memory/test_credentials.md missing")
-    student_email = None
-    student_password = None
+    role = role.lower().strip()
+    role_email = None
+    role_password = None
     with open(creds_path, "r", encoding="utf-8") as f:
         for line in f:
-            if line.strip().lower().startswith("- student email:"):
-                student_email = line.split(":", 1)[1].strip()
-            if line.strip().lower().startswith("- student password:"):
-                student_password = line.split(":", 1)[1].strip()
-    if not student_email or not student_password:
-        pytest.skip("Student credentials missing in test_credentials.md")
-    return student_email, student_password
+            lower = line.strip().lower()
+            if lower.startswith(f"- {role} email:"):
+                role_email = line.split(":", 1)[1].strip()
+            if lower.startswith(f"- {role} password:"):
+                role_password = line.split(":", 1)[1].strip()
+    if not role_email or not role_password:
+        pytest.skip(f"{role.title()} credentials missing in test_credentials.md")
+    return role_email, role_password
 
 
 def test_existing_returning_user_sees_welcome_back(api_client: requests.Session):
     # Regression module: seeded returning user should continue seeing returning-session greeting
-    student_email, student_password = _read_student_credentials()
+    student_email, student_password = _read_user_credentials("student")
     login = api_client.post(
         f"{API_BASE}/auth/login",
         json={"email": student_email, "password": student_password},
@@ -185,6 +187,50 @@ def test_existing_returning_user_sees_welcome_back(api_client: requests.Session)
     payload = dashboard.json()
     assert payload["is_first_session"] is False
     assert "Welcome back" in payload["first_visit_experience"]["welcome_message"]
+
+
+def test_existing_returning_admin_sees_welcome_back(api_client: requests.Session):
+    # Regression module: seeded returning admin should continue seeing returning-session greeting
+    admin_email, admin_password = _read_user_credentials("admin")
+    login = api_client.post(
+        f"{API_BASE}/auth/login",
+        json={"email": admin_email, "password": admin_password},
+        timeout=30,
+    )
+    assert login.status_code == 200, login.text
+    token = login.json()["token"]
+
+    dashboard = api_client.get(f"{API_BASE}/dashboard", headers=_auth_headers(token), timeout=30)
+    assert dashboard.status_code == 200
+    payload = dashboard.json()
+    assert payload["is_first_session"] is False
+    assert "Welcome back" in payload["first_visit_experience"]["welcome_message"]
+
+
+def test_rerun_onboarding_does_not_downgrade_returning_student(api_client: requests.Session):
+    # Idempotency module: re-submitting onboarding for returning student must not reset first-session flags
+    student_email, student_password = _read_user_credentials("student")
+    login = api_client.post(
+        f"{API_BASE}/auth/login",
+        json={"email": student_email, "password": student_password},
+        timeout=30,
+    )
+    assert login.status_code == 200, login.text
+    token = login.json()["token"]
+
+    before = api_client.get(f"{API_BASE}/dashboard", headers=_auth_headers(token), timeout=30)
+    assert before.status_code == 200
+    before_payload = before.json()
+    assert before_payload["is_first_session"] is False
+    assert "Welcome back" in before_payload["first_visit_experience"]["welcome_message"]
+
+    _submit_onboarding(api_client, token)
+
+    after = api_client.get(f"{API_BASE}/dashboard", headers=_auth_headers(token), timeout=30)
+    assert after.status_code == 200
+    after_payload = after.json()
+    assert after_payload["is_first_session"] is False
+    assert "Welcome back" in after_payload["first_visit_experience"]["welcome_message"]
 
 
 def test_post_onboarding_routes_no_regression(api_client: requests.Session):
