@@ -9,17 +9,24 @@ import { platformApi } from "@/services/api";
 export default function Schools() {
   const [schools, setSchools] = useState([]);
   const [courses, setCourses] = useState([]);
+  const [error, setError] = useState("");
   const refresh = async () => {
-    const [schoolRes, courseRes] = await Promise.all([platformApi.schools(), platformApi.courses()]);
-    setSchools(schoolRes.data.schools);
-    setCourses(courseRes.data.courses);
+    try {
+      setError("");
+      const [schoolRes, courseRes] = await Promise.all([platformApi.schools(), platformApi.courses()]);
+      setSchools(schoolRes.data.schools);
+      setCourses(courseRes.data.courses);
+    } catch {
+      setError("Schools and courses could not load. Please refresh and try again.");
+    }
   };
   useEffect(() => { refresh(); }, []);
-  const enrollSchool = async (id) => { await platformApi.enrollSchool(id); refresh(); };
-  const enrollCourse = async (id) => { await platformApi.enrollCourse(id); refresh(); };
+  const enrollSchool = async (id) => { try { await platformApi.enrollSchool(id); refresh(); } catch { setError("School enrollment could not be completed."); } };
+  const enrollCourse = async (id) => { try { await platformApi.enrollCourse(id); refresh(); } catch (err) { setError(err.response?.data?.detail || "Course enrollment could not be completed."); } };
 
   return (
     <PageShell eyebrow="Schools and courses" title="Choose your next learning path" action={<Button asChild data-testid="plans-link-button" className="rounded-full bg-brand-primary text-white hover:bg-brand-primaryHover"><Link to="/plans">View plans</Link></Button>}>
+      {error && <div className="mb-6 rounded-2xl border border-brand-border bg-white p-4 text-brand-error" data-testid="schools-error-message">{error}</div>}
       <div className="grid gap-6 lg:grid-cols-4" data-testid="schools-grid">
         {schools.map((school) => (
           <article key={school.id} className="overflow-hidden rounded-2xl border border-brand-border bg-white transition-transform duration-300 hover:-translate-y-1 hover:shadow-md" data-testid={`school-card-${school.id}`}>

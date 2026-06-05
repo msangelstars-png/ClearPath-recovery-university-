@@ -7,14 +7,22 @@ import { platformApi } from "@/services/api";
 export default function Plans() {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState("");
-  useEffect(() => { platformApi.plans().then(({ data }) => setPlans(data.plans)); }, []);
+  const [error, setError] = useState("");
+  useEffect(() => { platformApi.plans().then(({ data }) => setPlans(data.plans)).catch(() => setError("Subscription plans could not load.")); }, []);
   const choose = async (plan) => {
     setLoading(plan.id);
-    const { data } = await platformApi.checkout({ plan_id: plan.id, origin_url: window.location.origin });
-    window.location.href = data.url;
+    setError("");
+    try {
+      const { data } = await platformApi.checkout({ plan_id: plan.id, origin_url: window.location.origin });
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err.response?.data?.detail || "Checkout could not be opened. Please try again.");
+      setLoading("");
+    }
   };
   return (
     <PageShell eyebrow="Subscriptions" title="Choose your access level">
+      {error && <div className="mb-6 rounded-2xl border border-brand-border bg-white p-4 text-brand-error" data-testid="plans-error-message">{error}</div>}
       <div className="grid gap-6 md:grid-cols-2" data-testid="plans-grid">
         {plans.map((plan) => (
           <article key={plan.id} className="rounded-2xl border border-brand-border bg-white p-8" data-testid={`plan-card-${plan.id}`}>

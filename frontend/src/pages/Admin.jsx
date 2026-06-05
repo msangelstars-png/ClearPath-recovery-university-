@@ -5,7 +5,9 @@ import { platformApi } from "@/services/api";
 
 export default function Admin() {
   const [summary, setSummary] = useState(null);
-  useEffect(() => { platformApi.adminSummary().then(({ data }) => setSummary(data)); }, []);
+  const [error, setError] = useState("");
+  useEffect(() => { platformApi.adminSummary().then(({ data }) => setSummary(data)).catch(() => setError("Admin analytics could not load.")); }, []);
+  if (error) return <PageShell title="Admin"><div className="rounded-2xl border border-brand-border bg-white p-6 text-brand-error" data-testid="admin-error-state">{error}</div></PageShell>;
   if (!summary) return <PageShell title="Admin"><div data-testid="admin-loading-state">Loading admin panel…</div></PageShell>;
   return (
     <PageShell eyebrow="Admin panel" title="Users, courses, payments, and analytics">

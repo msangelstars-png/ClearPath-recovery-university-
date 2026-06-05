@@ -11,7 +11,8 @@ export default function AIProfessors() {
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [streaming, setStreaming] = useState(false);
-  useEffect(() => { platformApi.aiMessages(active.id).then(({ data }) => setMessages(data.messages)); }, [active]);
+  const [error, setError] = useState("");
+  useEffect(() => { platformApi.aiMessages(active.id).then(({ data }) => { setMessages(data.messages); setError(""); }).catch(() => setError("Professor history could not load. You can still try sending a new message.")); }, [active]);
   const send = async () => {
     if (!text.trim()) return;
     const prompt = text;
@@ -20,6 +21,10 @@ export default function AIProfessors() {
     setStreaming(true);
     try {
       await streamProfessorChat({ professor_id: active.id, message: prompt }, (full) => setMessages((prev) => [...prev.slice(0, -1), { role: "assistant", content: full }]));
+      setError("");
+    } catch {
+      setError("The professor could not respond right now. Please try again shortly.");
+      setMessages((prev) => [...prev.slice(0, -1), { role: "assistant", content: "I’m having trouble connecting right now, but your next right step can still be small: breathe, write one need, and return when ready." }]);
     } finally {
       setStreaming(false);
     }
@@ -32,6 +37,7 @@ export default function AIProfessors() {
         </aside>
         <section className="rounded-2xl border border-brand-border bg-white p-5 lg:col-span-3" data-testid="professor-chat-panel">
           <div className="mb-5 rounded-xl bg-brand-card p-4" data-testid="active-professor-header"><Sparkles className="mb-2 text-brand-primary" /><h2 className="font-heading text-2xl font-medium text-brand-dark" data-testid="active-professor-name">{active.name}</h2><p className="text-sm text-brand-muted" data-testid="active-professor-tone">{active.tone}</p></div>
+          {error && <p className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-brand-error" data-testid="ai-professor-error-message">{error}</p>}
           <div className="min-h-[360px] space-y-4 rounded-xl border border-brand-border bg-brand-base p-4" data-testid="ai-message-list">
             {messages.length === 0 && <p className="text-brand-muted" data-testid="empty-ai-message">Ask about your roadmap, a lesson, a difficult moment, or the next right step.</p>}
             {messages.map((message, index) => <div key={`${message.role}-${index}`} className={`max-w-[88%] rounded-2xl p-4 text-sm leading-relaxed ${message.role === "user" ? "ml-auto bg-brand-primary text-white" : "bg-white text-brand-charcoal"}`} data-testid={`ai-message-${index}`}>{message.content || "Thinking with care…"}</div>)}

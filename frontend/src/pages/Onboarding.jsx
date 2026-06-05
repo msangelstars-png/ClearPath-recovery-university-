@@ -14,13 +14,21 @@ export default function Onboarding() {
   const [goals, setGoals] = useState([goalOptions[0]]);
   const [preferences, setPreferences] = useState([preferenceOptions[0]]);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
 
   const toggle = (list, value, setter) => setter(list.includes(value) ? list.filter((item) => item !== value) : [...list, value]);
   const submit = async () => {
     setSaving(true);
-    await platformApi.onboarding({ recovery_stage: stage, goals, learning_preferences: preferences, support_focus: "balanced" });
-    navigate("/dashboard");
+    setError("");
+    try {
+      await platformApi.onboarding({ recovery_stage: stage, goals, learning_preferences: preferences, support_focus: "balanced" });
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.response?.data?.detail || "Your roadmap could not be saved. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -45,6 +53,7 @@ export default function Onboarding() {
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary" data-testid="roadmap-preview-label">Roadmap preview</p>
             <p className="mt-2 text-brand-charcoal" data-testid="roadmap-preview-text">Your first plan will combine {stage.toLowerCase()}, {goals.slice(0, 2).join(" and ") || "personal goals"}, and {preferences.slice(0, 2).join(" + ") || "guided learning"}.</p>
           </div>
+          {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-brand-error" data-testid="onboarding-error-message">{error}</p>}
           <Button onClick={submit} disabled={saving || goals.length === 0 || preferences.length === 0} data-testid="save-onboarding-button" className="mt-6 rounded-full bg-brand-primary px-6 py-6 text-white hover:bg-brand-primaryHover">{saving ? "Creating roadmap…" : "Generate my roadmap"} <ArrowRight size={17} /></Button>
         </section>
       </div>

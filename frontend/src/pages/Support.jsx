@@ -5,9 +5,11 @@ import { platformApi } from "@/services/api";
 
 export default function Support() {
   const [support, setSupport] = useState(null);
-  useEffect(() => { platformApi.support().then(({ data }) => setSupport(data)); }, []);
+  const [error, setError] = useState("");
+  useEffect(() => { platformApi.support().then(({ data }) => setSupport(data)).catch(() => setError("Support information could not load.")); }, []);
   return (
     <PageShell eyebrow="Support center" title="Help for students and families">
+      {error && <div className="mb-6 rounded-2xl border border-brand-border bg-white p-4 text-brand-error" data-testid="support-error-message">{error}</div>}
       <section className="rounded-2xl border border-brand-border bg-white p-8" data-testid="support-center-card">
         <LifeBuoy className="mb-4 text-brand-primary" size={34} />
         <p className="max-w-3xl text-brand-charcoal" data-testid="support-intro">Find help for account access, course progress, AI professor use, subscriptions, certificates, and family support learning.</p>

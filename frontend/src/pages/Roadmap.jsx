@@ -5,9 +5,11 @@ import { platformApi } from "@/services/api";
 
 export default function Roadmap() {
   const [roadmap, setRoadmap] = useState([]);
-  useEffect(() => { platformApi.dashboard().then(({ data }) => setRoadmap(data.profile?.roadmap || [])); }, []);
+  const [error, setError] = useState("");
+  useEffect(() => { platformApi.dashboard().then(({ data }) => setRoadmap(data.profile?.roadmap || [])).catch(() => setError("Roadmap could not load.")); }, []);
   return (
     <PageShell eyebrow="Personalized roadmap" title="Your first four-week path">
+      {error && <div className="mb-6 rounded-2xl border border-brand-border bg-white p-4 text-brand-error" data-testid="roadmap-error-message">{error}</div>}
       <div className="relative space-y-5" data-testid="roadmap-list">
         {roadmap.map((week) => (
           <article key={week.week} className="rounded-2xl border border-brand-border bg-white p-6" data-testid={`roadmap-week-${week.week}`}>

@@ -1,0 +1,71 @@
+# ClearPath Recovery University — Product Requirements Document
+
+## Original Problem Statement
+Build a fully functional platform called ClearPath Recovery University: a personalized AI-powered recovery, mental wellness, life skills, family support, and personal transformation university. Phase 1 MVP includes public landing page, custom user registration/authentication, personalized onboarding, recovery stage assessment, goal setting, learning preference selection, personalized roadmap generation, student dashboard, AI Professor system with memory, school/course enrollment, lessons, quizzes, reflection exercises, daily check-ins, mood tracking, journaling, progress tracking, certificates, Stripe subscriptions, basic support center, responsive design, and admin panel. User selected Phase 1 MVP plus Phase 2/3 preview page, JWT auth, GPT-5.2 AI professors using Emergent LLM key, and Stripe checkout for Free/Premium plans.
+
+## Architecture Decisions
+- Frontend: React with React Router, Tailwind CSS, Shadcn UI components, responsive bento-style dashboard, warm organic design system from `/app/design_guidelines.json`.
+- Backend: FastAPI with `/api` routes, MongoDB via existing `MONGO_URL`, JWT authentication, role-based admin access, and protected student APIs.
+- AI: GPT-5.2 via Emergent LLM integration with streamed responses, professor-specific prompts, persistent `ai_messages`, and `ai_memories` collections.
+- Payments: Stripe checkout integration through backend-defined plans only, `payment_transactions` collection, dynamic success/cancel URLs, and payment status polling endpoint.
+- Data: MongoDB collections include users, assessments, schools, courses, lessons, enrollments, reflections, daily_checkins, journal_entries, certificates, ai_messages, ai_memories, subscriptions, and payment_transactions.
+
+## User Personas
+- New Student: needs warm onboarding, recovery-stage assessment, personalized roadmap, and simple first lessons.
+- Returning Student: needs dashboard access, progress, check-ins, journaling, AI guidance, and course continuation.
+- Premium Student: needs full course access, certificates, and AI professor support.
+- Family Support Learner: needs family recovery education and communication repair tools.
+- Admin: needs high-level visibility into users, courses, enrollments, payments, and analytics.
+
+## Core Requirements
+- Public marketing entry with clear university identity.
+- Secure email/password registration and login with JWT.
+- Personalized onboarding that stores goals, recovery stage, preferences, and roadmap.
+- Dashboard with learning path, progress, goals, streaks, certificates, recommendations, and notifications.
+- Schools: Recovery, Mental Wellness, Life Skills, Family Recovery.
+- AI Professors: Hope, Insight, Compass, Bridge.
+- Lessons with quiz and reflection completion, progress tracking, and certificates.
+- Daily check-ins, mood tracking, journaling, and sentiment tags.
+- Free and Premium subscription plans with Stripe checkout flow.
+- Support center and admin panel.
+- Phase 2/3 preview page.
+- Mobile-friendly responsive layout.
+
+## Implemented — 2026-06-05
+- Built full React application with landing, auth, onboarding, dashboard, schools, courses, lessons, AI professors, journal/check-ins, plans, roadmap, support, certificates, preview, and admin routes.
+- Built FastAPI backend with JWT auth, MongoDB persistence, seeded school/course/lesson catalog, onboarding roadmap generation, enrollments, lesson completion, certificates, journal/check-ins, AI streamed chat, Stripe checkout, payment polling, support, and admin summary APIs.
+- Added deterministic local test credentials in `/app/memory/test_credentials.md` for repeatable testing.
+- Testing agent validated backend + frontend flows; backend tests passed 10/10 and core UI flows passed.
+- Added user-visible error handling for major API-driven pages.
+
+## Validation Summary
+- Backend curl validation passed for health, registration, onboarding, dashboard, courses, and admin summary.
+- Browser validation passed for landing, auth, login, and dashboard rendering.
+- Testing agent report: `/app/test_reports/iteration_1.json`.
+
+## Prioritized Backlog
+### P0 Remaining
+- Add production-grade password reset/email verification.
+- Add Stripe webhook hardening with signature/environment handling for real production billing.
+- Add clinical safety escalation workflows and crisis-resource localization.
+
+### P1 Remaining
+- Build richer course authoring/admin CRUD tools.
+- Add downloadable certificate PDFs.
+- Add deeper AI memory summarization and semantic retrieval.
+- Add notification scheduler for reminders.
+- Add Family Plan functionality.
+
+### P2 Remaining
+- Community groups, posts, comments, moderation, and messaging.
+- Audio/video lessons and worksheets.
+- Multi-language support.
+- Enterprise dashboards, audit logs, and role-based organizational permissions.
+- Live AI classes, voice AI, and AI video professor experiences.
+
+## Next Tasks
+1. Expand course library content for all four MVP schools.
+2. Add profile settings and password recovery flows.
+3. Add richer analytics charts for admin and student progress.
+4. Turn certificates into downloadable/printable documents.
+5. Add reminder scheduling for daily check-ins and lesson continuation.

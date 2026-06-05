@@ -9,26 +9,32 @@ import { platformApi } from "@/services/api";
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState("");
+  const [error, setError] = useState("");
   const [params] = useSearchParams();
 
-  useEffect(() => { platformApi.dashboard().then(({ data }) => setData(data)); }, []);
+  useEffect(() => { platformApi.dashboard().then(({ data }) => setData(data)).catch(() => setError("Dashboard data could not load. Please refresh and try again.")); }, []);
   useEffect(() => {
     const sessionId = params.get("session_id");
     if (!sessionId) return;
     let attempts = 0;
     const poll = async () => {
       attempts += 1;
-      const { data: status } = await platformApi.paymentStatus(sessionId);
-      if (status.payment_status === "paid") {
-        setPaymentMessage("Premium is active. Full courses and certificates are unlocked.");
-        const fresh = await platformApi.dashboard();
-        setData(fresh.data);
-      } else if (attempts < 5) setTimeout(poll, 2000);
-      else setPaymentMessage("Payment is still processing. Refresh this dashboard shortly.");
+      try {
+        const { data: status } = await platformApi.paymentStatus(sessionId);
+        if (status.payment_status === "paid") {
+          setPaymentMessage("Premium is active. Full courses and certificates are unlocked.");
+          const fresh = await platformApi.dashboard();
+          setData(fresh.data);
+        } else if (attempts < 5) setTimeout(poll, 2000);
+        else setPaymentMessage("Payment is still processing. Refresh this dashboard shortly.");
+      } catch {
+        setPaymentMessage("Payment status could not be confirmed yet. Please refresh shortly.");
+      }
     };
     poll();
   }, [params]);
 
+  if (error) return <PageShell title="Dashboard"><div className="rounded-2xl border border-brand-border bg-white p-6 text-brand-error" data-testid="dashboard-error-state">{error}</div></PageShell>;
   if (!data) return <PageShell title="Dashboard"><div data-testid="dashboard-loading-state">Preparing your dashboard…</div></PageShell>;
 
   return (

@@ -13,12 +13,14 @@ export default function Journal() {
   const [tags, setTags] = useState("");
   const [mood, setMood] = useState(7);
   const [reflection, setReflection] = useState("");
-  const load = async () => { const [j, c] = await Promise.all([platformApi.journal(), platformApi.checkins()]); setEntries(j.data.entries); setCheckins(c.data.checkins); };
+  const [error, setError] = useState("");
+  const load = async () => { try { const [j, c] = await Promise.all([platformApi.journal(), platformApi.checkins()]); setEntries(j.data.entries); setCheckins(c.data.checkins); setError(""); } catch { setError("Journal and check-in history could not load."); } };
   useEffect(() => { load(); }, []);
-  const saveJournal = async () => { await platformApi.createJournal({ content, tags: tags.split(",").map((t) => t.trim()).filter(Boolean) }); setContent(""); setTags(""); load(); };
-  const saveCheckin = async () => { await platformApi.createCheckin({ mood_score: Number(mood), reflection_notes: reflection }); setReflection(""); load(); };
+  const saveJournal = async () => { try { await platformApi.createJournal({ content, tags: tags.split(",").map((t) => t.trim()).filter(Boolean) }); setContent(""); setTags(""); load(); } catch { setError("Journal entry could not be saved."); } };
+  const saveCheckin = async () => { try { await platformApi.createCheckin({ mood_score: Number(mood), reflection_notes: reflection }); setReflection(""); load(); } catch { setError("Daily check-in could not be saved."); } };
   return (
     <PageShell eyebrow="Daily check-ins and journaling" title="Track mood, reflection, and growth">
+      {error && <div className="mb-6 rounded-2xl border border-brand-border bg-white p-4 text-brand-error" data-testid="journal-error-message">{error}</div>}
       <div className="grid gap-6 lg:grid-cols-2" data-testid="journal-grid">
         <section className="rounded-2xl border border-brand-border bg-white p-6" data-testid="daily-checkin-card">
           <SmilePlus className="mb-3 text-brand-primary" /><h2 className="font-heading text-2xl font-medium text-brand-dark" data-testid="daily-checkin-title">Daily check-in</h2>
