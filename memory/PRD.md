@@ -114,3 +114,13 @@ Build a fully functional platform called ClearPath Recovery University: a person
 ## Credential-Gated Notes
 - Direct OpenAI Realtime Voice credentials were not provided. The platform now has production-ready voice/video session architecture and browser TTS/text AI operation; real-time OpenAI voice can be activated once a direct OpenAI Realtime-enabled API key is configured.
 - Avatar provider integration is provider-ready for future HeyGen/Synthesia/D-ID/Tavus-style systems without rebuilding the classroom/session architecture.
+
+
+## Bug Fix — First-Time Dashboard Welcome — 2026-06-05
+- Fixed onboarding-to-dashboard first-session logic so brand-new users see "Welcome to ClearPath, [Name]" instead of "Welcome back" after completing onboarding.
+- Added durable user state flags: `has_completed_onboarding`, `has_completed_first_login`, `has_visited_dashboard`, and `dashboard_visit_count`.
+- `/api/dashboard` now returns `is_first_session` and `first_visit_experience` containing welcome message, roadmap summary, recommended first course, assigned AI Professor, and next steps.
+- Added `/api/dashboard/mark-visited` so the frontend marks first dashboard visit only after the first-visit experience renders.
+- Made onboarding idempotent so returning users cannot be downgraded back to first-session by re-submitting onboarding.
+- Normalized seeded returning test accounts so they correctly show "Welcome back".
+- Regression passed: `/app/test_reports/iteration_7.json` and `/app/test_reports/pytest/pytest_results_iteration_7.xml`.
