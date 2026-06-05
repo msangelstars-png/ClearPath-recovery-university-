@@ -1,0 +1,114 @@
+{
+  "project_name": "ClearPath Recovery University",
+  "theme": "LIGHT",
+  "archetype": "1_organic_earthy",
+  "archetype_description": "Grounded, warm, matte, and physical. Evokes trust, growth, and calm for users seeking recovery and mental wellness.",
+  "typography": {
+    "font_strategy": "The Soft Utility",
+    "headings": {
+      "family": "Outfit",
+      "weights": ["light", "medium", "semibold"],
+      "usage": "Use Outfit for expressive, approachable headings. Use 'tracking-tight' for large headings to maintain professionalism without feeling rigid."
+    },
+    "body": {
+      "family": "Work Sans",
+      "weights": ["regular", "medium"],
+      "usage": "Use Work Sans for all body text, dashboard data, and input labels. Highly legible, warm humanist sans-serif."
+    },
+    "hierarchy_rules": [
+      "H1 (Hero): text-5xl sm:text-6xl tracking-tighter leading-none text-brand-dark",
+      "H2 (Section): text-3xl sm:text-4xl tracking-tight leading-tight text-brand-dark",
+      "H3 (Card/Widget): text-xl font-medium tracking-normal",
+      "Body: text-base leading-relaxed text-brand-charcoal",
+      "Labels: text-xs uppercase tracking-[0.2em] font-semibold text-brand-muted"
+    ]
+  },
+  "colors": {
+    "background": {
+      "base": "#F9F8F6",
+      "surface": "#FFFFFF",
+      "card_hover": "#F2EFEB"
+    },
+    "brand": {
+      "primary": "#A0522D",
+      "primary_hover": "#8B4513",
+      "secondary": "#607D8B",
+      "tertiary": "#8F9779"
+    },
+    "text": {
+      "dark": "#1A1A19",
+      "charcoal": "#2C2A29",
+      "muted": "#7A7571"
+    },
+    "borders": {
+      "default": "#E6E4DD",
+      "focus": "#A0522D"
+    },
+    "status": {
+      "success": "#4A5D23",
+      "warning": "#D4A373",
+      "error": "#B83B5E",
+      "info": "#457B9D"
+    }
+  },
+  "layout_and_spacing": {
+    "spacing_scale": "Generous Spacing (p-8, p-12, gap-8) for breathing room.",
+    "marketing_pages": "Mode A: Tetris Grid. Asymmetric bento-style layouts for feature showcases. Heavy use of negative space.",
+    "dashboard": "Mode B: Control Room Grid. Standardized bento boxes (gap-6). Solid flat backgrounds. No glassmorphism.",
+    "cards": "Flat solid background, 1px border-brand-muted (10% opacity), rounded-2xl. Soft diffuse shadow on hover only."
+  },
+  "components": {
+    "buttons": "rounded-full for primary CTA to feel approachable. Primary buttons use bg-brand-primary text-white hover:bg-brand-primary-hover. Secondary buttons use transparent bg, 1px border-brand-muted, text-brand-charcoal hover:bg-background-card_hover.",
+    "inputs_and_forms": "Shadcn highly customized. rounded-xl, border-brand-muted, bg-white. focus:ring-2 focus:ring-brand-primary.",
+    "navigation": "Sticky top nav. Solid bg-background-base/95 backdrop-blur-md. Border bottom 1px border-brand-muted. No fully transparent headers.",
+    "testing": "All interactive elements MUST have data-testid attributes (e.g., data-testid='signup-submit-btn')."
+  },
+  "motion_and_interaction": {
+    "hover_states": "Cards slightly lift (-translate-y-1) with ambient shadow (shadow-md). Text color explicitly defined on hover to maintain 4.5:1 contrast.",
+    "transitions": "transition-all duration-300 ease-in-out for buttons and cards.",
+    "page_load": "Framer motion staggered fade-in up (y: 20, opacity: 0) for lists and dashboard widgets."
+  },
+  "icons": {
+    "library": "lucide-react",
+    "style": "Stroke width 1.5, warm charcoal or primary color. Avoid harsh black icons."
+  },
+  "media": {
+    "strategy": "Avoid generic tech/SaaS illustrations. Use warm, natural, sunlit photography focusing on growth, peace, and human connection.",
+    "images": {
+      "hero_background": {
+        "url": "https://images.unsplash.com/photo-1629161156834-67f7a989ca67?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHw0fHxwZWFjZWZ1bCUyMG5hdHVyZSUyMGxhbmRzY2FwZSUyMG1vcm5pbmclMjBzdW5yaXNlfGVufDB8fHx8MTc4MDYyNDUwMHww&ixlib=rb-4.1.0&q=85",
+        "alt": "Sunrise over a peaceful green landscape",
+        "usage": "Main landing page hero background. Apply a linear gradient overlay (bg-gradient-to-r from-background-base/90 to-background-base/40) to ensure text contrast."
+      },
+      "school_of_mental_wellness": {
+        "url": "https://images.pexels.com/photos/30539356/pexels-photo-30539356.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "alt": "Woman journaling in warm sunlight",
+        "usage": "Feature block for School of Mental Wellness or Onboarding flow."
+      },
+      "school_of_life_skills": {
+        "url": "https://images.pexels.com/photos/16157307/pexels-photo-16157307.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "alt": "Person writing outdoors on steps",
+        "usage": "Feature block for School of Life Skills."
+      },
+      "platform_university_vibe": {
+        "url": "https://images.unsplash.com/photo-1621192754911-ffe0d95929dd?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NjZ8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjB1bml2ZXJzaXR5JTIwYnVpbGRpbmclMjBzdW5ueXxlbnwwfHx8fDE3ODA2MjQ1MDB8MA&ixlib=rb-4.1.0&q=85",
+        "alt": "Modern sunny campus building",
+        "usage": "About section or Phase 2/3 preview page banner."
+      },
+      "dashboard_texture": {
+        "url": "https://images.unsplash.com/photo-1596486935250-3ca1fb5c45b8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NDh8MHwxfHNlYXJjaHwyfHxhYnN0cmFjdCUyMHdhcm0lMjBzYW5kJTIwdGV4dHVyZSUyMG1hY3JvfGVufDB8fHx8MTc4MDYyNDUxMnww&ixlib=rb-4.1.0&q=85",
+        "alt": "Abstract warm sand texture",
+        "usage": "Subtle background texture for AI Professor interaction panels or Certificate backgrounds (opacity 5-10%)."
+      }
+    }
+  },
+  "instructions_to_main_agent": [
+    "Strictly adhere to the color palette. DO NOT default to Tailwind blue/indigo.",
+    "Use Outfit for Headings and Work Sans for Body. Load these via Google Fonts in index.css.",
+    "Implement Shadcn, but remove default border radiuses from standard tech looks; use rounded-xl for cards, rounded-full for primary CTAs.",
+    "Dashboard must be built on a CSS Grid (grid-cols-1 md:grid-cols-4) using the gap-6 bento box style.",
+    "Ensure all text has a minimum 4.5:1 contrast ratio against the bone-white (F9F8F6) or white backgrounds.",
+    "Use the provided media URLs exclusively. Do not use placeholder images.",
+    "Include 'data-testid' on all interactive elements (buttons, inputs, links)."
+  ]
+}
