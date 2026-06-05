@@ -69,3 +69,24 @@ Build a fully functional platform called ClearPath Recovery University: a person
 3. Add richer analytics charts for admin and student progress.
 4. Turn certificates into downloadable/printable documents.
 5. Add reminder scheduling for daily check-ins and lesson continuation.
+
+
+## Expansion Implemented — 2026-06-05
+- Added 12 specialized AI professors with dedicated schools, personalities, teaching styles, voice/avatar metadata, expertise areas, and memory-aware prompts: Hope, Insight, Grace, Compass, Bridge, Nurture, Prosper, Horizon, Strength, Freedom, Voice, and Legacy.
+- Expanded schools/pathways for active addiction, recovery, family members, faith-based recovery, mental wellness, parenting, relationships, financial freedom, career development, physical wellness, relapse prevention, purpose/leadership, and life skills.
+- Added individualized learning plans based on onboarding profile, pathway interests, preferred language, learning style, goals, recovery stage, and journal-memory consent.
+- Added multilingual support metadata for English, Spanish, French, Portuguese, German, and Arabic across pathways/classes/materials.
+- Added live learning ecosystem: class catalog, classroom pages, attendance tracking, participation Q&A, replay/transcript sections, written lesson versions, class completion, and class certificates.
+- Added support ticket system with tracking numbers, categories, priority levels, attachment URL metadata, AI triage text, statuses, student history, ratings-ready schema, and admin support inbox with internal notes/status updates.
+- Added contact center page with phone, email, FAQs, support form, and emergency resource messaging.
+- Added downloadable certificate action and responsive navigation improvements for expanded routes.
+- Persistence verified for learning plans, support tickets, class attendance, class Q&A, certificates, coursework, journals, assessments, and professor conversations through MongoDB.
+
+## Expansion Validation — 2026-06-05
+- Backend expanded ecosystem regression tests passed 7/7: `/app/backend/tests/test_expanded_learning_ecosystem.py`.
+- Frontend regression after fixes passed: certificate rendering/download, mobile overflow, pathways, classes, tickets, and admin support routes.
+- Reports: `/app/test_reports/iteration_2.json`, `/app/test_reports/iteration_3.json`.
+
+## Notes / Future Integration Work
+- Live classroom currently provides an in-app AI classroom stage, text Q&A, captions/transcript/replay/written lesson flows, attendance, participation, and certificates. Future work can connect real-time video avatar, speech-to-text, and voice conversation providers.
+- File attachment support currently stores attachment URL metadata for tickets. Future work can connect object storage for direct uploaded files/videos.
