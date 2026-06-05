@@ -186,8 +186,8 @@ def test_ai_chat_stream_works_for_focus_personalized_profile(api_client: request
     assert any(message["role"] == "assistant" for message in messages)
 
 
-def test_onboarding_allows_empty_primary_focus_current_behavior(api_client: requests.Session):
-    # Validation gap module: backend currently accepts empty primary_recovery_focus list
+def test_onboarding_rejects_empty_primary_focus_with_422(api_client: requests.Session):
+    # Validation module: backend must reject empty primary_recovery_focus
     token, _ = _register_and_get_token(api_client)
     response = api_client.post(
         f"{API_BASE}/onboarding",
@@ -195,6 +195,20 @@ def test_onboarding_allows_empty_primary_focus_current_behavior(api_client: requ
         headers=_auth_headers(token),
         timeout=30,
     )
-    assert response.status_code == 200
+    assert response.status_code == 422, response.text
     data = response.json()
-    assert data["profile"]["primary_recovery_focus"] == []
+    assert "detail" in data
+
+
+def test_onboarding_rejects_unsupported_primary_focus_with_422(api_client: requests.Session):
+    # Validation module: backend must reject unsupported focus options
+    token, _ = _register_and_get_token(api_client)
+    response = api_client.post(
+        f"{API_BASE}/onboarding",
+        json=_onboarding_payload(["Invalid Focus Option"]),
+        headers=_auth_headers(token),
+        timeout=30,
+    )
+    assert response.status_code == 422, response.text
+    data = response.json()
+    assert "detail" in data

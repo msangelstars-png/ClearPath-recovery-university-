@@ -6,7 +6,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
 from pathlib import Path
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 from typing import Any, Dict, List, Optional
 import uuid
 from datetime import datetime, timezone, timedelta
@@ -503,7 +503,7 @@ class LoginRequest(BaseModel):
 
 
 class OnboardingRequest(BaseModel):
-    primary_recovery_focus: List[str] = []
+    primary_recovery_focus: List[str] = Field(min_length=1)
     recovery_stage: str
     goals: List[str]
     learning_preferences: List[str]
@@ -511,6 +511,22 @@ class OnboardingRequest(BaseModel):
     preferred_language: Optional[str] = "en"
     pathway_interests: List[str] = []
     journal_memory_consent: bool = True
+
+    @field_validator("primary_recovery_focus")
+    @classmethod
+    def validate_primary_recovery_focus(cls, value: List[str]) -> List[str]:
+        invalid = [item for item in value if item not in PRIMARY_RECOVERY_FOCUS_OPTIONS]
+        if invalid:
+            raise ValueError(f"Unsupported recovery focus: {', '.join(invalid)}")
+        return value
+
+    @field_validator("recovery_stage")
+    @classmethod
+    def validate_recovery_stage(cls, value: str) -> str:
+        allowed = ["Actively using", "Thinking about change", "Preparing to quit", "Early recovery", "Maintaining recovery", "Returning after relapse", "Supporting a loved one"]
+        if value not in allowed:
+            raise ValueError("Unsupported recovery stage")
+        return value
 
 
 class CheckInRequest(BaseModel):
