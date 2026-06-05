@@ -1,0 +1,59 @@
+{
+  "summary": "Executed backend + frontend regression for visitor access controls, onboarding additions, and registered-user protected flows. Most requested flows pass, but anonymous program APIs expose full tracks/modules/assignments directly.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "/api/programs",
+        "issue": "Anonymous request returns full program tracks/modules instead of description-only preview; exposes gated curriculum structure.",
+        "priority": "CRITICAL"
+      },
+      {
+        "endpoint": "/api/programs/{program_id}",
+        "issue": "Anonymous request returns full track/module/assignment data (not gated) when requirement expects no assignments/progress unlocked for visitors.",
+        "priority": "CRITICAL"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_onboarding_primary_focus_personalization.py",
+    "/app/backend/tests/test_visitor_access_controls.py",
+    "/app/test_reports/pytest/pytest_results_iteration_10_backend.xml",
+    "/app/test_reports/pytest/pytest_results_iteration_10_access.xml",
+    "/root/.emergent/automation_output/20260605_051544/console_20260605_051544.log",
+    "/root/.emergent/automation_output/20260605_051645/console_20260605_051645.log"
+  ],
+  "action_items": [
+    "Gate /api/programs for anonymous users to return preview-safe payload only (e.g., no tracks/modules/assignments).",
+    "Gate /api/programs/{program_id} for anonymous users to return description-only preview payload, matching frontend behavior and product requirement.",
+    "Keep backend and frontend contracts aligned for visitor-safe data exposure to avoid direct API bypass."
+  ],
+  "critical_code_review_comments": [
+    "Access-control is enforced in frontend rendering but not consistently in backend program APIs, creating a direct API data exposure path.",
+    "server.py remains very large (>700 lines); moving program/public-access policy into dedicated module would reduce future gating regressions."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_onboarding_primary_focus_personalization.py",
+    "/app/backend/tests/test_visitor_access_controls.py",
+    "/app/test_reports/iteration_10.json"
+  ],
+  "success_rate": {
+    "backend": "87.5% (14/16 targeted tests passed)",
+    "frontend": "100% (targeted visitor gating + onboarding + registered-flow checks passed)"
+  },
+  "test_credentials": "Read and used /app/memory/test_credentials.md (student account). Also used isolated generated registration user for onboarding/personalization verification.",
+  "seed_data_creation": "Created isolated test user via UI registration: iter10_user_1780636553@example.com.",
+  "retest_needed": true,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "UI gating message is correct across protected routes for visitors and onboarding additions are working. Re-test should focus on backend fix for anonymous /api/programs and /api/programs/{id} exposure after patch.",
+  "rca of the issue": "RCA: Program endpoints use optional auth but always return full program documents from DB without visitor-safe projection/transform. Repro: GET /api/programs or /api/programs/program-recovery without Authorization returns tracks/modules/assignments. Mitigation: branch response by auth state (visitor vs authenticated), returning preview schema for visitors only.",
+  "mocked_api": {
+    "has_mocked_apis": false,
+    "mocked_apis_list": []
+  }
+}

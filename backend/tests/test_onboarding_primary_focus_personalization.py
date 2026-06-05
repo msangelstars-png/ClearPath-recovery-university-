@@ -62,6 +62,8 @@ def _auth_headers(token: str) -> Dict[str, str]:
 def _onboarding_payload(primary_focus: list[str]) -> Dict:
     return {
         "primary_recovery_focus": primary_focus,
+        "duration_affecting_life": "1 to 5 years",
+        "previous_treatment_support": "No, this is my first time",
         "recovery_stage": "Early recovery",
         "goals": ["Reduce cravings", "Build daily structure"],
         "learning_preferences": ["Short lessons", "AI professor coaching"],

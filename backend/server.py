@@ -128,6 +128,17 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
     return user
 
 
+async def get_optional_user(request: Request) -> Optional[Dict[str, Any]]:
+    auth = request.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return None
+    try:
+        payload = jwt.decode(auth.replace("Bearer ", "", 1), JWT_SECRET, algorithms=[JWT_ALGORITHM])
+    except jwt.PyJWTError:
+        return None
+    return await db.users.find_one({"id": payload.get("sub")}, {"_id": 0, "password_hash": 0})
+
+
 async def require_admin(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
     if user.get("role") != "admin":
         raise HTTPException(status_code=403, detail="Admin access required")
@@ -504,6 +515,8 @@ class LoginRequest(BaseModel):
 
 class OnboardingRequest(BaseModel):
     primary_recovery_focus: List[str] = Field(min_length=1)
+    duration_affecting_life: str
+    previous_treatment_support: str
     recovery_stage: str
     goals: List[str]
     learning_preferences: List[str]
@@ -526,6 +539,22 @@ class OnboardingRequest(BaseModel):
         allowed = ["Actively using", "Thinking about change", "Preparing to quit", "Early recovery", "Maintaining recovery", "Returning after relapse", "Supporting a loved one"]
         if value not in allowed:
             raise ValueError("Unsupported recovery stage")
+        return value
+
+    @field_validator("duration_affecting_life")
+    @classmethod
+    def validate_duration(cls, value: str) -> str:
+        allowed = ["Less than 6 months", "6 months to 1 year", "1 to 5 years", "5 to 10 years", "More than 10 years"]
+        if value not in allowed:
+            raise ValueError("Unsupported duration option")
+        return value
+
+    @field_validator("previous_treatment_support")
+    @classmethod
+    def validate_previous_support(cls, value: str) -> str:
+        allowed = ["No, this is my first time", "Yes, outpatient", "Yes, inpatient/residential", "Yes, support groups", "Multiple recovery attempts", "Currently in treatment"]
+        if value not in allowed:
+            raise ValueError("Unsupported treatment/support option")
         return value
 
 
@@ -693,10 +722,12 @@ def build_roadmap(profile: Dict[str, Any]) -> List[Dict[str, Any]]:
     focuses = profile.get("primary_recovery_focus") or []
     primary_focus = focuses[0] if focuses else "Recovery"
     focus_plan = FOCUS_PERSONALIZATION.get(primary_focus, FOCUS_PERSONALIZATION["Other"])
+    duration = profile.get("duration_affecting_life")
+    previous_support = profile.get("previous_treatment_support")
     return [
-        {"week": 1, "title": f"Stabilize your {stage.lower()} foundation for {primary_focus.lower()}", "actions": [focus_plan["resource"], "Submit daily check-ins", "Start a private journal"]},
+        {"week": 1, "title": f"Stabilize your {stage.lower()} foundation for {primary_focus.lower()}", "actions": [focus_plan["resource"], f"Personalize support for timeline: {duration or 'not specified'}", "Submit daily check-ins", "Start a private journal"]},
         {"week": 2, "title": f"Map {primary_focus.lower()} triggers and recovery skills", "actions": [focus_plan["assignment"], "Track mood and craving patterns", f"Ask {PROFESSORS[focus_plan['professor_id']]['name']} for personalized guidance"]},
-        {"week": 3, "title": "Translate goals into routines", "actions": [f"Practice: {goals[0] if goals else 'one realistic weekly goal'}", f"Enroll in {focus_plan['course_id'].replace('-', ' ').title()}", "Review streak progress"]},
+        {"week": 3, "title": "Translate goals into routines", "actions": [f"Practice: {goals[0] if goals else 'one realistic weekly goal'}", f"Match guidance to experience: {previous_support or 'not specified'}", f"Enroll in {focus_plan['course_id'].replace('-', ' ').title()}", "Review streak progress"]},
         {"week": 4, "title": "Strengthen support, relapse prevention, and community", "actions": [focus_plan["reflection"], f"Join: {focus_plan['community']}", f"Use your preferred learning mode: {', '.join(preferences[:2]) or 'short lessons'}"]},
     ]
 
@@ -730,6 +761,8 @@ def build_individual_learning_plan(profile: Dict[str, Any]) -> Dict[str, Any]:
         "stage": stage,
         "primary_goal": goals[0] if goals else "Build steady progress",
         "primary_recovery_focus": focuses,
+        "duration_affecting_life": profile.get("duration_affecting_life"),
+        "previous_treatment_support": profile.get("previous_treatment_support"),
         "specialized_content": [FOCUS_PERSONALIZATION.get(focus, FOCUS_PERSONALIZATION["Other"])["resource"] for focus in focuses],
         "preferred_learning": preferences,
         "language": profile.get("preferred_language", "en"),
@@ -759,6 +792,8 @@ async def save_onboarding(payload: OnboardingRequest, user: Dict[str, Any] = Dep
         "user_id": user["id"],
         "recovery_stage": payload.recovery_stage,
         "primary_recovery_focus": payload.primary_recovery_focus,
+        "duration_affecting_life": payload.duration_affecting_life,
+        "previous_treatment_support": payload.previous_treatment_support,
         "goals": payload.goals,
         "learning_preferences": payload.learning_preferences,
         "support_focus": payload.support_focus,
@@ -797,9 +832,9 @@ async def list_schools(user: Dict[str, Any] = Depends(get_current_user)):
 
 
 @api_router.get("/professors")
-async def list_professors(user: Dict[str, Any] = Depends(get_current_user)):
-    memory = await db.ai_memories.find_one({"user_id": user["id"]}, {"_id": 0})
-    completed = await db.enrollments.find({"user_id": user["id"]}, {"_id": 0}).to_list(100)
+async def list_professors(user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
+    memory = await db.ai_memories.find_one({"user_id": user["id"]}, {"_id": 0}) if user else None
+    completed = await db.enrollments.find({"user_id": user["id"]}, {"_id": 0}).to_list(100) if user else []
     professor_list = []
     for professor_id, professor in PROFESSORS.items():
         professor_list.append({
@@ -819,13 +854,35 @@ async def list_pathways(user: Dict[str, Any] = Depends(get_current_user)):
 
 @api_router.get("/onboarding/options")
 async def onboarding_options():
-    return {"primary_recovery_focus_options": PRIMARY_RECOVERY_FOCUS_OPTIONS, "stage_options": ["Actively using", "Thinking about change", "Preparing to quit", "Early recovery", "Maintaining recovery", "Returning after relapse", "Supporting a loved one"], "focus_personalization": FOCUS_PERSONALIZATION}
+    return {"primary_recovery_focus_options": PRIMARY_RECOVERY_FOCUS_OPTIONS, "duration_options": ["Less than 6 months", "6 months to 1 year", "1 to 5 years", "5 to 10 years", "More than 10 years"], "previous_treatment_support_options": ["No, this is my first time", "Yes, outpatient", "Yes, inpatient/residential", "Yes, support groups", "Multiple recovery attempts", "Currently in treatment"], "stage_options": ["Actively using", "Thinking about change", "Preparing to quit", "Early recovery", "Maintaining recovery", "Returning after relapse", "Supporting a loved one"], "focus_personalization": FOCUS_PERSONALIZATION}
+
+
+@api_router.get("/public/preview")
+async def public_preview():
+    sample_lessons = await db.lessons.find({}, {"_id": 0, "id": 1, "course_id": 1, "title": 1, "content": 1, "reflection_prompt": 1}).limit(6).to_list(6)
+    for lesson in sample_lessons:
+        lesson["sample_content"] = lesson.get("content", "")[:220] + "..."
+        lesson.pop("content", None)
+    return {
+        "schools": SCHOOLS,
+        "courses": COURSES,
+        "professors": [{"id": key, **value} for key, value in PROFESSORS.items()],
+        "programs": [{"id": program["id"], "school_id": program["school_id"], "school_name": program["school_name"], "description": program["description"], "professor": program["professor"], "graduation_pathway": program["graduation_pathway"], "track_count": len(program["tracks"])} for program in PROGRAMS],
+        "sample_lessons": sample_lessons,
+        "pricing": list(PLANS.values()),
+        "features": ["Personalized onboarding", "AI Professor directory", "Semester programs", "Sample lessons", "Certificates", "Live classes after enrollment", "Journaling and progress tracking after enrollment"],
+        "success_stories": [
+            {"name": "Maya", "story": "Found structure through short lessons, daily check-ins, and Professor Hope’s recovery roadmap."},
+            {"name": "Jordan", "story": "Used family recovery courses and Professor Bridge to rebuild safer conversations."},
+            {"name": "Sam", "story": "Started with mental wellness lessons and grew into a personalized life-skills plan."},
+        ],
+    }
 
 
 @api_router.get("/programs")
-async def list_programs(user: Dict[str, Any] = Depends(get_current_user)):
+async def list_programs(user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
     programs = await db.programs.find({}, {"_id": 0}).to_list(200)
-    progress = await db.program_progress.find({"user_id": user["id"]}, {"_id": 0}).to_list(500)
+    progress = await db.program_progress.find({"user_id": user["id"]}, {"_id": 0}).to_list(500) if user else []
     progress_map = {(item["program_id"], item["track_id"]): item for item in progress}
     for program in programs:
         for track in program.get("tracks", []):
@@ -834,11 +891,11 @@ async def list_programs(user: Dict[str, Any] = Depends(get_current_user)):
 
 
 @api_router.get("/programs/{program_id}")
-async def get_program(program_id: str, user: Dict[str, Any] = Depends(get_current_user)):
+async def get_program(program_id: str, user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
     program = await db.programs.find_one({"id": program_id}, {"_id": 0})
     if not program:
         raise HTTPException(status_code=404, detail="Program not found")
-    submissions = await db.assignment_submissions.find({"user_id": user["id"], "program_id": program_id}, {"_id": 0}).to_list(500)
+    submissions = await db.assignment_submissions.find({"user_id": user["id"], "program_id": program_id}, {"_id": 0}).to_list(500) if user else []
     return {"program": program, "submissions": submissions}
 
 

@@ -19,6 +19,14 @@ const navItems = [
   ["Support", "/support"],
 ];
 
+const visitorNavItems = [
+  ["Schools", "/schools"],
+  ["Programs", "/programs"],
+  ["AI Professors", "/ai-professors"],
+  ["Pricing", "/plans"],
+  ["Features", "/"],
+];
+
 export function TopNav() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -31,7 +39,7 @@ export function TopNav() {
           <span className="min-w-0 truncate whitespace-nowrap font-heading text-base font-semibold text-brand-dark xl:text-lg">ClearPath<span className="hidden sm:inline"> Recovery University</span></span>
         </Link>
         <nav className="hidden items-center gap-0 xl:flex" data-testid="desktop-navigation-links">
-          {user && navItems.map(([label, href]) => (
+          {(user ? navItems : visitorNavItems).map(([label, href]) => (
             <NavLink key={href} to={href} data-testid={`nav-link-${label.toLowerCase().replaceAll(" ", "-")}`} className={({ isActive }) => `whitespace-nowrap rounded-full px-2.5 py-2 text-xs transition-colors 2xl:px-3 2xl:text-sm ${isActive ? "bg-brand-card text-brand-primary" : "text-brand-charcoal hover:bg-brand-card"}`}>{label}</NavLink>
           ))}
           {user?.role === "admin" && <NavLink to="/admin" data-testid="nav-link-admin" className="whitespace-nowrap rounded-full px-2.5 py-2 text-xs text-brand-charcoal hover:bg-brand-card 2xl:px-3 2xl:text-sm">Admin</NavLink>}
@@ -42,13 +50,13 @@ export function TopNav() {
           ) : (
             <Button variant="outline" onClick={() => { logout(); navigate("/"); }} data-testid="logout-button" className="h-10 w-10 rounded-full border-brand-border bg-white p-0 sm:w-auto sm:px-4"><LogOut size={16} /> <span className="hidden sm:inline">Logout</span></Button>
           )}
-          {user && <Button variant="ghost" onClick={() => setMobileOpen(!mobileOpen)} data-testid="mobile-menu-button" className="xl:hidden"><Menu size={18} /></Button>}
+          <Button variant="ghost" onClick={() => setMobileOpen(!mobileOpen)} data-testid="mobile-menu-button" className="xl:hidden"><Menu size={18} /></Button>
         </div>
       </div>
-      {user && mobileOpen && (
+      {mobileOpen && (
         <nav className="border-t border-brand-border px-4 py-3 xl:hidden" data-testid="mobile-navigation-links">
           <div className="flex max-w-full flex-wrap gap-2 overflow-hidden">
-            {navItems.map(([label, href]) => (
+            {(user ? navItems : visitorNavItems).map(([label, href]) => (
               <NavLink key={href} to={href} onClick={() => setMobileOpen(false)} data-testid={`mobile-nav-link-${label.toLowerCase().replaceAll(" ", "-")}`} className={({ isActive }) => `max-w-full rounded-full px-3 py-2 text-sm transition-colors ${isActive ? "bg-brand-card text-brand-primary" : "text-brand-charcoal hover:bg-brand-card"}`}>{label}</NavLink>
             ))}
             {user?.role === "admin" && <NavLink to="/admin" onClick={() => setMobileOpen(false)} data-testid="mobile-nav-link-admin" className="rounded-full px-3 py-2 text-sm text-brand-charcoal hover:bg-brand-card">Admin</NavLink>}

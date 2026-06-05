@@ -5,13 +5,23 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { PageShell } from "@/components/Layout";
 import { platformApi } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
+import EnrollmentPrompt from "@/components/EnrollmentPrompt";
 
 export default function ProgramDetail() {
+  const { user } = useAuth();
   const { programId } = useParams();
   const [data, setData] = useState(null);
   const [responses, setResponses] = useState({});
   const [message, setMessage] = useState("");
-  const load = async () => setData((await platformApi.program(programId)).data);
+  const load = async () => {
+    if (user) setData((await platformApi.program(programId)).data);
+    else {
+      const { data } = await platformApi.publicPreview();
+      const program = data.programs.find((item) => item.id === programId);
+      setData({ program: program ? { ...program, tracks: [] } : null, submissions: [] });
+    }
+  };
   useEffect(() => { load(); }, [programId]);
   const submit = async (track, module, assignment) => {
     const { data: res } = await platformApi.submitAssignment({ program_id: programId, track_id: track.id, module_id: module.id, assignment_id: assignment.id, text_response: responses[assignment.id] || "Completed through classroom practice.", file_ids: [], language: "en" });
@@ -20,6 +30,8 @@ export default function ProgramDetail() {
   };
   if (!data) return <PageShell title="Program"><div data-testid="program-loading-state">Loading semester program…</div></PageShell>;
   const program = data.program;
+  if (!program) return <PageShell title="Program preview"><EnrollmentPrompt /></PageShell>;
+  if (!user) return <PageShell eyebrow="Program preview" title={program.school_name}><section className="rounded-2xl border border-brand-border bg-white p-6" data-testid="program-public-preview"><p className="text-brand-charcoal" data-testid="program-preview-description">{program.description}</p><p className="mt-3 text-sm text-brand-muted" data-testid="program-preview-professor">Professor: {program.professor}</p><p className="mt-3 text-sm text-brand-muted" data-testid="program-preview-pathway">Graduation pathway: {(program.graduation_pathway || []).join(" → ")}</p></section><div className="mt-6"><EnrollmentPrompt text="Create your free account to unlock modules, full lessons, quizzes, assignments, certificates, and progress tracking." /></div></PageShell>;
   return (
     <PageShell eyebrow={program.professor} title={program.school_name}>
       {message && <div className="mb-6 rounded-2xl border border-brand-border bg-white p-4 text-brand-success" data-testid="assignment-submit-message">{message}</div>}

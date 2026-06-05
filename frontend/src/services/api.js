@@ -33,6 +33,7 @@ export const authApi = {
 };
 
 export const platformApi = {
+  publicPreview: () => api.get("/public/preview"),
   onboarding: (payload) => api.post("/onboarding", payload),
   dashboard: () => api.get("/dashboard"),
   markDashboardVisited: () => api.post("/dashboard/mark-visited"),

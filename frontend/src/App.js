@@ -39,19 +39,19 @@ function App() {
           <Route path="/preview" element={<Preview />} />
           <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/schools" element={<ProtectedRoute><Schools /></ProtectedRoute>} />
-          <Route path="/programs" element={<ProtectedRoute><Programs /></ProtectedRoute>} />
-          <Route path="/programs/:programId" element={<ProtectedRoute><ProgramDetail /></ProtectedRoute>} />
+          <Route path="/schools" element={<Schools />} />
+          <Route path="/programs" element={<Programs />} />
+          <Route path="/programs/:programId" element={<ProgramDetail />} />
           <Route path="/pathways" element={<ProtectedRoute><Pathways /></ProtectedRoute>} />
           <Route path="/courses/:courseId" element={<ProtectedRoute><CourseDetail /></ProtectedRoute>} />
           <Route path="/classes" element={<ProtectedRoute><LiveClasses /></ProtectedRoute>} />
           <Route path="/classes/:classId" element={<ProtectedRoute><Classroom /></ProtectedRoute>} />
           <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
           <Route path="/replays" element={<ProtectedRoute><Replays /></ProtectedRoute>} />
-          <Route path="/ai-professors" element={<ProtectedRoute><AIProfessors /></ProtectedRoute>} />
+          <Route path="/ai-professors" element={<AIProfessors />} />
           <Route path="/voice-studio" element={<ProtectedRoute><VoiceStudio /></ProtectedRoute>} />
           <Route path="/journal" element={<ProtectedRoute><Journal /></ProtectedRoute>} />
-          <Route path="/plans" element={<ProtectedRoute><Plans /></ProtectedRoute>} />
+          <Route path="/plans" element={<Plans />} />
           <Route path="/roadmap" element={<ProtectedRoute><Roadmap /></ProtectedRoute>} />
           <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
           <Route path="/tickets" element={<ProtectedRoute><Tickets /></ProtectedRoute>} />

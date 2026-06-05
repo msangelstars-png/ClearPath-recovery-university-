@@ -8,6 +8,8 @@ import { languages } from "@/data/platform";
 
 const focusOptions = ["Alcohol", "Opioids", "Fentanyl", "Prescription Opioids", "Heroin", "Stimulants", "Methamphetamine", "Cocaine", "Crack Cocaine", "Cannabis", "Benzodiazepines", "Nicotine/Tobacco", "Gambling", "Gaming", "Pornography/Sexual Behavior", "Food and Eating Behaviors", "Multiple Substances", "Supporting a Loved One", "Mental Wellness Only", "Other"];
 const stages = ["Actively using", "Thinking about change", "Preparing to quit", "Early recovery", "Maintaining recovery", "Returning after relapse", "Supporting a loved one"];
+const durationOptions = ["Less than 6 months", "6 months to 1 year", "1 to 5 years", "5 to 10 years", "More than 10 years"];
+const treatmentOptions = ["No, this is my first time", "Yes, outpatient", "Yes, inpatient/residential", "Yes, support groups", "Multiple recovery attempts", "Currently in treatment"];
 const goalOptions = ["Reduce cravings", "Improve mood", "Repair relationships", "Build daily structure", "Strengthen confidence", "Understand recovery"];
 const preferenceOptions = ["Short lessons", "Reflection prompts", "Quizzes", "Step-by-step plans", "AI professor coaching", "Journaling"];
 const pathwayOptions = ["active-addiction", "early-recovery", "family-member", "faith-based", "mental-wellness", "parenting", "relationships", "financial-freedom", "career-development", "life-skills"];
@@ -15,6 +17,8 @@ const pathwayOptions = ["active-addiction", "early-recovery", "family-member", "
 export default function Onboarding() {
   const [step, setStep] = useState(1);
   const [primaryFocus, setPrimaryFocus] = useState([]);
+  const [duration, setDuration] = useState(durationOptions[0]);
+  const [previousSupport, setPreviousSupport] = useState(treatmentOptions[0]);
   const [stage, setStage] = useState(stages[1]);
   const [goals, setGoals] = useState([goalOptions[0]]);
   const [preferences, setPreferences] = useState([preferenceOptions[0]]);
@@ -30,7 +34,7 @@ export default function Onboarding() {
     setSaving(true);
     setError("");
     try {
-      await platformApi.onboarding({ primary_recovery_focus: primaryFocus, recovery_stage: stage, goals, learning_preferences: preferences, support_focus: "balanced", preferred_language: language, pathway_interests: pathways, journal_memory_consent: journalConsent });
+      await platformApi.onboarding({ primary_recovery_focus: primaryFocus, duration_affecting_life: duration, previous_treatment_support: previousSupport, recovery_stage: stage, goals, learning_preferences: preferences, support_focus: "balanced", preferred_language: language, pathway_interests: pathways, journal_memory_consent: journalConsent });
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.detail || "Your roadmap could not be saved. Please try again.");
@@ -52,6 +56,10 @@ export default function Onboarding() {
           <div className="mt-6 flex flex-wrap gap-3" data-testid="primary-focus-options">
             {focusOptions.map((item) => <button key={item} onClick={() => toggle(primaryFocus, item, setPrimaryFocus)} data-testid={`primary-focus-option-${item.toLowerCase().replaceAll("/", "-").replaceAll(" ", "-")}`} className={`rounded-full border px-4 py-2 text-sm transition-colors ${primaryFocus.includes(item) ? "border-brand-primary bg-brand-primary text-white" : "border-brand-border bg-white text-brand-charcoal hover:bg-brand-card"}`}>{primaryFocus.includes(item) && <Check className="mr-1 inline" size={14} />} {item}</button>)}
           </div>
+          <h3 className="mt-8 font-heading text-2xl font-medium text-brand-dark" data-testid="duration-question">How long has this been affecting your life?</h3>
+          <div className="mt-4 flex flex-wrap gap-3" data-testid="duration-options">{durationOptions.map((item) => <button key={item} onClick={() => setDuration(item)} data-testid={`duration-option-${item.toLowerCase().replaceAll(" ", "-")}`} className={`rounded-full border px-4 py-2 text-sm ${duration === item ? "border-brand-primary bg-brand-primary text-white" : "border-brand-border bg-white text-brand-charcoal"}`}>{item}</button>)}</div>
+          <h3 className="mt-8 font-heading text-2xl font-medium text-brand-dark" data-testid="previous-support-question">Have you received treatment or recovery support before?</h3>
+          <div className="mt-4 flex flex-wrap gap-3" data-testid="previous-support-options">{treatmentOptions.map((item) => <button key={item} onClick={() => setPreviousSupport(item)} data-testid={`previous-support-option-${item.toLowerCase().replaceAll("/", "-").replaceAll(",", "").replaceAll(" ", "-")}`} className={`rounded-full border px-4 py-2 text-sm ${previousSupport === item ? "border-brand-primary bg-brand-primary text-white" : "border-brand-border bg-white text-brand-charcoal"}`}>{item}</button>)}</div>
           <Button onClick={() => setStep(2)} disabled={primaryFocus.length === 0} data-testid="continue-from-primary-focus-button" className="mt-8 rounded-full bg-brand-primary px-6 py-6 text-white hover:bg-brand-primaryHover">Continue to current stage <ArrowRight size={17} /></Button>
         </section>
       )}
@@ -87,7 +95,7 @@ export default function Onboarding() {
           <button onClick={() => setJournalConsent(!journalConsent)} data-testid="journal-memory-consent-toggle" className={`mt-5 rounded-xl border p-4 text-left text-sm ${journalConsent ? "border-brand-primary bg-brand-card text-brand-charcoal" : "border-brand-border bg-white text-brand-muted"}`}>{journalConsent ? "Journal insights may personalize professor memory." : "Journal insights will not be used for professor memory."}</button>
           <div className="mt-8 rounded-2xl bg-brand-card p-5" data-testid="roadmap-preview-box">
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary" data-testid="roadmap-preview-label">Roadmap preview</p>
-            <p className="mt-2 text-brand-charcoal" data-testid="roadmap-preview-text">Your first plan will combine {primaryFocus.slice(0, 2).join(" + ")}, {stage.toLowerCase()}, {goals.slice(0, 2).join(" and ") || "personal goals"}, {pathways.slice(0, 2).join(" + ")}, and {preferences.slice(0, 2).join(" + ") || "guided learning"}.</p>
+            <p className="mt-2 text-brand-charcoal" data-testid="roadmap-preview-text">Your first plan will combine {primaryFocus.slice(0, 2).join(" + ")}, {duration.toLowerCase()}, {previousSupport.toLowerCase()}, {stage.toLowerCase()}, {goals.slice(0, 2).join(" and ") || "personal goals"}, and {preferences.slice(0, 2).join(" + ") || "guided learning"}.</p>
           </div>
           {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-brand-error" data-testid="onboarding-error-message">{error}</p>}
           <div className="mt-6 flex gap-3"><Button variant="outline" onClick={() => setStep(2)} data-testid="back-to-stage-button" className="rounded-full border-brand-border bg-white">Back</Button><Button onClick={submit} disabled={saving || goals.length === 0 || preferences.length === 0 || primaryFocus.length === 0} data-testid="save-onboarding-button" className="rounded-full bg-brand-primary px-6 py-6 text-white hover:bg-brand-primaryHover">{saving ? "Creating roadmap…" : "Generate my roadmap"} <ArrowRight size={17} /></Button></div>

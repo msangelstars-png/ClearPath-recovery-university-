@@ -3,13 +3,20 @@ import { CheckCircle2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/Layout";
 import { platformApi } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
+import EnrollmentPrompt from "@/components/EnrollmentPrompt";
 
 export default function Plans() {
+  const { user } = useAuth();
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState("");
   const [error, setError] = useState("");
   useEffect(() => { platformApi.plans().then(({ data }) => setPlans(data.plans)).catch(() => setError("Subscription plans could not load.")); }, []);
   const choose = async (plan) => {
+    if (!user) {
+      setError("Create your free account to continue your personalized recovery journey.");
+      return;
+    }
     setLoading(plan.id);
     setError("");
     try {
@@ -23,6 +30,7 @@ export default function Plans() {
   return (
     <PageShell eyebrow="Subscriptions" title="Choose your access level">
       {error && <div className="mb-6 rounded-2xl border border-brand-border bg-white p-4 text-brand-error" data-testid="plans-error-message">{error}</div>}
+      {!user && <div className="mb-6"><EnrollmentPrompt text="You can review pricing and features now. Create your free account when you’re ready to start your personalized plan." /></div>}
       <div className="grid gap-6 md:grid-cols-2" data-testid="plans-grid">
         {plans.map((plan) => (
           <article key={plan.id} className="rounded-2xl border border-brand-border bg-white p-8" data-testid={`plan-card-${plan.id}`}>

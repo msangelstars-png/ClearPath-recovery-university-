@@ -4,18 +4,22 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { PageShell } from "@/components/Layout";
 import { platformApi, streamProfessorChat } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
+import EnrollmentPrompt from "@/components/EnrollmentPrompt";
 
 export default function AIProfessors() {
+  const { user } = useAuth();
   const [professors, setProfessors] = useState([]);
   const [active, setActive] = useState(null);
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => { platformApi.professors().then(({ data }) => { setProfessors(data.professors); setActive(data.professors[0]); }); }, []);
-  useEffect(() => { if (active) platformApi.aiMessages(active.id).then(({ data }) => { setMessages(data.messages); setError(""); }).catch(() => setError("Professor history could not load. You can still try sending a new message.")); }, [active]);
+  useEffect(() => { (user ? platformApi.professors() : platformApi.publicPreview()).then(({ data }) => { const list = user ? data.professors : data.professors; setProfessors(list); setActive(list[0]); }); }, [user]);
+  useEffect(() => { if (active && user) platformApi.aiMessages(active.id).then(({ data }) => { setMessages(data.messages); setError(""); }).catch(() => setError("Professor history could not load. You can still try sending a new message.")); }, [active, user]);
   const send = async () => {
     if (!text.trim()) return;
+    if (!user) { setError("Create your free account to continue your personalized recovery journey."); return; }
     const prompt = text;
     setText("");
     setMessages((prev) => [...prev, { role: "user", content: prompt }, { role: "assistant", content: "" }]);
@@ -40,6 +44,7 @@ export default function AIProfessors() {
         <section className="rounded-2xl border border-brand-border bg-white p-5 lg:col-span-3" data-testid="professor-chat-panel">
           <div className="mb-5 rounded-xl bg-brand-card p-4" data-testid="active-professor-header"><Sparkles className="mb-2 text-brand-primary" /><h2 className="font-heading text-2xl font-medium text-brand-dark" data-testid="active-professor-name">{active.avatar} {active.name}</h2><p className="text-sm text-brand-muted" data-testid="active-professor-tone">{active.personality} · {active.voice}</p><p className="mt-2 text-sm text-brand-charcoal" data-testid="active-professor-memory">Remembers profile, goals, progress, completed coursework, prior conversations, and permitted journal insights.</p></div>
           {error && <p className="mb-4 rounded-xl bg-red-50 p-3 text-sm text-brand-error" data-testid="ai-professor-error-message">{error}</p>}
+          {!user && <div className="mb-4"><EnrollmentPrompt /></div>}
           <div className="min-h-[360px] space-y-4 rounded-xl border border-brand-border bg-brand-base p-4" data-testid="ai-message-list">
             {messages.length === 0 && <p className="text-brand-muted" data-testid="empty-ai-message">Ask about your roadmap, a lesson, a difficult moment, or the next right step.</p>}
             {messages.map((message, index) => <div key={`${message.role}-${index}`} className={`max-w-[88%] rounded-2xl p-4 text-sm leading-relaxed ${message.role === "user" ? "ml-auto bg-brand-primary text-white" : "bg-white text-brand-charcoal"}`} data-testid={`ai-message-${index}`}>{message.content || "Thinking with care…"}</div>)}
