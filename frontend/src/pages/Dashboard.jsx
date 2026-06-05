@@ -47,10 +47,12 @@ export default function Dashboard() {
   return (
     <PageShell eyebrow={data.is_first_session ? "Your first day at ClearPath" : "Student dashboard"} title={welcomeTitle} action={<Button asChild data-testid="dashboard-ai-action" className="rounded-full bg-brand-primary text-white hover:bg-brand-primaryHover"><Link to="/ai-professors"><Sparkles size={16} /> Ask a professor</Link></Button>}>
       {paymentMessage && <div className="mb-6 rounded-2xl border border-brand-success/30 bg-green-50 p-4 text-brand-success" data-testid="payment-status-message">{paymentMessage}</div>}
+      {data.trial?.active && <div className="mb-6 rounded-2xl border border-brand-primary/30 bg-brand-card p-5" data-testid="premium-trial-banner"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary">7-day Premium trial active</p><h2 className="mt-2 font-heading text-2xl text-brand-dark" data-testid="premium-trial-days">{data.trial.days_remaining} days remaining</h2><p className="mt-1 text-sm text-brand-muted">Full access is unlocked during your trial — schools, AI professors, courses, events, assignments, certificates, journals, and premium features.</p></div>}
       {data.is_first_session && (
         <section className="mb-6 rounded-2xl border border-brand-border bg-white p-6" data-testid="first-visit-welcome-panel">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-primary" data-testid="first-visit-label">Your university orientation</p>
           <h2 className="mt-3 font-heading text-3xl font-semibold text-brand-dark" data-testid="first-visit-title">Your personalized roadmap is ready</h2>
+          <p className="mt-2 text-brand-muted" data-testid="first-visit-intro-copy">Your 7-day Premium trial is active with no credit card required. Use this first week to meet your professor, start your course, and explore the university.</p>
           <div className="mt-5 grid gap-4 lg:grid-cols-3">
             <div className="rounded-xl bg-brand-card p-4" data-testid="first-visit-roadmap-summary">
               <h3 className="font-heading text-xl text-brand-dark">Roadmap summary</h3>

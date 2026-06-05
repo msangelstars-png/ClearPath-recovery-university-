@@ -59,6 +59,41 @@ def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
+def parse_iso(value: Optional[str]) -> Optional[datetime]:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def trial_days_remaining(user: Dict[str, Any]) -> int:
+    end = parse_iso(user.get("trial_end_at"))
+    if not end:
+        return 0
+    remaining = end - datetime.now(timezone.utc)
+    return max(0, remaining.days + (1 if remaining.seconds > 0 else 0))
+
+
+def has_premium_access(user: Dict[str, Any]) -> bool:
+    if user.get("subscription_status") == "premium":
+        return True
+    if user.get("subscription_status") == "premium_annual":
+        return True
+    if user.get("subscription_status") == "premium_trial" and trial_days_remaining(user) > 0:
+        return True
+    return False
+
+
+async def normalize_subscription(user: Dict[str, Any]) -> Dict[str, Any]:
+    if user.get("subscription_status") == "premium_trial" and trial_days_remaining(user) <= 0:
+        await db.users.update_one({"id": user["id"]}, {"$set": {"subscription_status": "free", "trial_expired": True, "trial_expired_at": now_iso(), "updated_at": now_iso()}})
+        user = {**user, "subscription_status": "free", "trial_expired": True, "trial_expired_at": now_iso()}
+    return user
+
+
 def init_storage() -> str:
     global storage_key
     if storage_key:
@@ -96,6 +131,11 @@ def public_user(user: Dict[str, Any]) -> Dict[str, Any]:
         "name": user["name"],
         "role": user.get("role", "student"),
         "subscription_status": user.get("subscription_status", "free"),
+        "premium_access": has_premium_access(user),
+        "trial_start_at": user.get("trial_start_at"),
+        "trial_end_at": user.get("trial_end_at"),
+        "trial_days_remaining": trial_days_remaining(user),
+        "trial_expired": user.get("trial_expired", False),
         "onboarding_complete": user.get("onboarding_complete", False),
         "has_completed_onboarding": user.get("has_completed_onboarding", user.get("onboarding_complete", False)),
         "has_completed_first_login": user.get("has_completed_first_login", user.get("dashboard_visit_count", 0) > 0),
@@ -125,7 +165,7 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
     user = await db.users.find_one({"id": payload.get("sub")}, {"_id": 0, "password_hash": 0})
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
-    return user
+    return await normalize_subscription(user)
 
 
 async def get_optional_user(request: Request) -> Optional[Dict[str, Any]]:
@@ -136,7 +176,8 @@ async def get_optional_user(request: Request) -> Optional[Dict[str, Any]]:
         payload = jwt.decode(auth.replace("Bearer ", "", 1), JWT_SECRET, algorithms=[JWT_ALGORITHM])
     except jwt.PyJWTError:
         return None
-    return await db.users.find_one({"id": payload.get("sub")}, {"_id": 0, "password_hash": 0})
+    user = await db.users.find_one({"id": payload.get("sub")}, {"_id": 0, "password_hash": 0})
+    return await normalize_subscription(user) if user else None
 
 
 async def require_admin(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
@@ -285,6 +326,14 @@ COURSES = [
     {"id": "body-recovery", "school_id": "physical-wellness", "title": "Body Recovery Basics", "difficulty": "Beginner", "instructor_ai": "Professor Strength", "summary": "Sleep, nourishment, movement, hydration, and nervous-system steadiness.", "premium": True},
     {"id": "long-term-freedom", "school_id": "relapse-prevention", "title": "Long-Term Freedom Plan", "difficulty": "Advanced", "instructor_ai": "Professor Freedom", "summary": "Trigger mapping, recovery identity, relapse prevention, and sustainable support systems.", "premium": True},
     {"id": "purpose-after-recovery", "school_id": "purpose-leadership", "title": "Purpose After Recovery", "difficulty": "Advanced", "instructor_ai": "Professor Legacy", "summary": "Meaning, service, leadership, mentorship, and giving back with healthy boundaries.", "premium": True},
+    {"id": "alcohol-recovery-skills", "school_id": "recovery", "title": "Alcohol Recovery Skills", "difficulty": "Beginner", "instructor_ai": "Professor Hope", "summary": "Alcohol-specific education, triggers, sober routines, health awareness, and relapse prevention.", "premium": True},
+    {"id": "opioid-safety-recovery", "school_id": "active-addiction", "title": "Opioid Safety & Recovery", "difficulty": "Beginner", "instructor_ai": "Professor Hope", "summary": "Opioid-specific recovery, overdose awareness, MAT education, safety planning, and resources.", "premium": True},
+    {"id": "fentanyl-safety-planning", "school_id": "active-addiction", "title": "Fentanyl Safety Planning", "difficulty": "Beginner", "instructor_ai": "Professor Hope", "summary": "Fentanyl risk education, overdose awareness, emergency planning, and treatment readiness.", "premium": True},
+    {"id": "stimulant-recovery-regulation", "school_id": "mental-wellness", "title": "Stimulant Recovery Regulation", "difficulty": "Beginner", "instructor_ai": "Professor Insight", "summary": "Craving management, sleep recovery, mood regulation, and stimulant-specific recovery planning.", "premium": True},
+    {"id": "gambling-recovery-accountability", "school_id": "financial-freedom", "title": "Gambling Recovery Accountability", "difficulty": "Beginner", "instructor_ai": "Professor Prosper", "summary": "Urge planning, financial safeguards, blocking tools, repair, and accountability routines.", "premium": True},
+    {"id": "gaming-balance-reset", "school_id": "life-skills", "title": "Gaming Balance Reset", "difficulty": "Beginner", "instructor_ai": "Professor Compass", "summary": "Digital boundaries, dopamine reset, sleep/routine rebuilding, and replacement activities.", "premium": True},
+    {"id": "family-support-foundations", "school_id": "family-recovery", "title": "Family Support Foundations", "difficulty": "Beginner", "instructor_ai": "Professor Bridge", "summary": "Family-specific education, boundaries, communication, safety planning, and support without rescuing.", "premium": True},
+    {"id": "mental-wellness-foundations", "school_id": "mental-wellness", "title": "Mental Wellness Foundations", "difficulty": "Beginner", "instructor_ai": "Professor Insight", "summary": "Mood tracking, grounding, journaling, emotional regulation, and wellness routines.", "premium": True},
 ]
 
 LESSONS = [
@@ -345,6 +394,14 @@ LESSONS = [
     {"id": "br-1", "course_id": "body-recovery", "title": "Body Care Minimums", "content": "Recovery asks the body to heal too. Start with minimums: water, sleep routine, nourishment, movement, and medical support when needed.", "reflection_prompt": "Which body-care minimum needs attention today?", "quiz": [{"question": "Body recovery works best with:", "options": ["Small repeatable care", "Ignoring needs", "All-or-nothing plans"], "answer": 0}]},
     {"id": "ltf-1", "course_id": "long-term-freedom", "title": "Trigger Map 2.0", "content": "Long-term recovery uses pattern recognition. Map people, places, emotions, and transitions that increase risk, then pair each with a prepared support action.", "reflection_prompt": "Which trigger needs a prepared action?", "quiz": [{"question": "Trigger mapping pairs risk with:", "options": ["Support actions", "Shame", "Secrecy"], "answer": 0}]},
     {"id": "par-1", "course_id": "purpose-after-recovery", "title": "Giving Back With Boundaries", "content": "Purpose can include service, but healthy service has boundaries. Give from stability, not depletion.", "reflection_prompt": "Where can you give back without overextending?", "quiz": [{"question": "Healthy service includes:", "options": ["Boundaries", "Rescuing everyone", "Ignoring your needs"], "answer": 0}]},
+    {"id": "ars-1", "course_id": "alcohol-recovery-skills", "title": "Alcohol Triggers and Sober Routines", "content": "Alcohol recovery often involves predictable cues: evenings, celebrations, stress, loneliness, certain friends, and easy access. A sober routine replaces cue-driven behavior with support, structure, and a clear exit plan.", "reflection_prompt": "Which alcohol cue is strongest right now, and what safer routine can meet that need?", "quiz": [{"question": "Alcohol relapse prevention is strengthened by:", "options": ["Trigger mapping and support", "Keeping risk secret", "Waiting for willpower"], "answer": 0}]},
+    {"id": "osr-1", "course_id": "opioid-safety-recovery", "title": "Opioid Safety, Support, and Treatment Options", "content": "Opioid recovery requires safety-first planning. Learn overdose awareness, trusted support contacts, questions about medication-assisted treatment, and how to reduce isolation during high-risk moments.", "reflection_prompt": "What support would make opioid-related risk safer in the next 24 hours?", "quiz": [{"question": "A safety-first opioid plan includes:", "options": ["Support contacts and overdose awareness", "Isolation", "Ignoring tolerance changes"], "answer": 0}]},
+    {"id": "fsp-1", "course_id": "fentanyl-safety-planning", "title": "Fentanyl Risk and Emergency Readiness", "content": "Fentanyl risk can change quickly. This lesson focuses on emergency planning, not shame: know local emergency options, avoid using alone, identify support, and consider treatment readiness steps.", "reflection_prompt": "What is one immediate action that could reduce fentanyl-related danger?", "quiz": [{"question": "Fentanyl safety planning should prioritize:", "options": ["Immediate safety and emergency support", "Secrecy", "Delay"], "answer": 0}]},
+    {"id": "srr-1", "course_id": "stimulant-recovery-regulation", "title": "Stimulant Cravings, Sleep, and Emotional Regulation", "content": "Stimulant recovery often requires nervous-system repair: sleep, nutrition, emotional regulation, trigger distance, and planned support for crash periods or intense urges.", "reflection_prompt": "What happens before stimulant urges: pressure, exhaustion, emotion, people, or opportunity?", "quiz": [{"question": "Stimulant recovery planning often starts with:", "options": ["Sleep and regulation supports", "More pressure", "Ignoring crash periods"], "answer": 0}]},
+    {"id": "gra-1", "course_id": "gambling-recovery-accountability", "title": "Gambling Urges and Financial Safeguards", "content": "Gambling recovery combines urge planning with practical barriers: spending limits, blocking access, accountability, debt visibility, and support before chasing losses.", "reflection_prompt": "What safeguard would reduce gambling risk this week?", "quiz": [{"question": "A gambling recovery safeguard can include:", "options": ["Accountability and access blocks", "Chasing losses", "Hidden spending"], "answer": 0}]},
+    {"id": "gbr-1", "course_id": "gaming-balance-reset", "title": "Gaming Boundaries and Life Re-entry", "content": "Gaming balance starts by noticing what gaming provides: escape, achievement, connection, control, or relief. Recovery rebuilds sleep, responsibilities, connection, and replacement rewards.", "reflection_prompt": "What need does gaming meet, and what real-life replacement could begin gently?", "quiz": [{"question": "Gaming balance improves with:", "options": ["Boundaries and replacement routines", "All-night sessions", "Avoiding sleep"], "answer": 0}]},
+    {"id": "fsf-1", "course_id": "family-support-foundations", "title": "Support Without Rescuing", "content": "Family recovery is not about controlling another person. It teaches boundaries, safety planning, communication, self-care, and compassionate support without taking over responsibility for someone else’s recovery.", "reflection_prompt": "Where do you need a boundary that protects love from becoming burnout?", "quiz": [{"question": "Family support should include:", "options": ["Boundaries and self-care", "Rescuing every crisis", "Blame"], "answer": 0}]},
+    {"id": "mwf-1", "course_id": "mental-wellness-foundations", "title": "Mood Patterns and Grounding", "content": "Mental wellness begins with observation. Track mood, name emotions, use grounding, and create a support routine before distress becomes overwhelming.", "reflection_prompt": "Which mood pattern most needs structure and compassion?", "quiz": [{"question": "Mood awareness helps by:", "options": ["Making patterns visible", "Judging feelings", "Avoiding support"], "answer": 0}]},
 ]
 
 PROFESSORS = {
@@ -376,25 +433,25 @@ PRIMARY_RECOVERY_FOCUS_OPTIONS = [
 ]
 
 FOCUS_PERSONALIZATION = {
-    "Alcohol": {"pathway": "early-recovery", "professor_id": "hope", "course_id": "recovery-foundations", "resource": "Alcohol-specific education, withdrawal awareness, trigger mapping, sober routines, relapse prevention, and real-world recovery experiences.", "assignment": "Map alcohol triggers, high-risk settings, support contacts, and a safer evening/weekend plan.", "reflection": "When does alcohol feel most connected to stress, celebration, loneliness, or routine?", "community": "Alcohol recovery skills circle"},
-    "Opioids": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Opioid-specific recovery education, overdose awareness, medication-assisted treatment education, safety planning, and relapse prevention resources.", "assignment": "Create an opioid safety plan that includes overdose awareness, support contacts, medication questions, and high-risk moments.", "reflection": "What support would make the next 24 hours safer for opioid-related risk?", "community": "Opioid recovery safety and support group"},
-    "Fentanyl": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Fentanyl-focused overdose awareness, harm-reduction education, urgent safety planning, treatment readiness, and support resources.", "assignment": "Build a fentanyl risk-reduction and emergency support plan with trusted contacts and local emergency resources.", "reflection": "What is one action that would reduce fentanyl-related danger today?", "community": "Fentanyl safety planning circle"},
+    "Alcohol": {"pathway": "early-recovery", "professor_id": "hope", "course_id": "alcohol-recovery-skills", "resource": "Alcohol-specific education, withdrawal awareness, trigger mapping, sober routines, relapse prevention, and real-world recovery experiences.", "assignment": "Map alcohol triggers, high-risk settings, support contacts, and a safer evening/weekend plan.", "reflection": "When does alcohol feel most connected to stress, celebration, loneliness, or routine?", "community": "Alcohol recovery skills circle"},
+    "Opioids": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "opioid-safety-recovery", "resource": "Opioid-specific recovery education, overdose awareness, medication-assisted treatment education, safety planning, and relapse prevention resources.", "assignment": "Create an opioid safety plan that includes overdose awareness, support contacts, medication questions, and high-risk moments.", "reflection": "What support would make the next 24 hours safer for opioid-related risk?", "community": "Opioid recovery safety and support group"},
+    "Fentanyl": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "fentanyl-safety-planning", "resource": "Fentanyl-focused overdose awareness, harm-reduction education, urgent safety planning, treatment readiness, and support resources.", "assignment": "Build a fentanyl risk-reduction and emergency support plan with trusted contacts and local emergency resources.", "reflection": "What is one action that would reduce fentanyl-related danger today?", "community": "Fentanyl safety planning circle"},
     "Prescription Opioids": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Prescription opioid education, tolerance/dependence awareness, medication conversations, taper-support questions, and relapse prevention.", "assignment": "List medication-related questions for a qualified professional and identify one safe support person.", "reflection": "What pattern do you notice around prescription opioid use and pain, stress, or sleep?", "community": "Medication recovery support circle"},
     "Heroin": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Heroin-specific overdose awareness, stabilization planning, support readiness, MAT education, and relapse prevention.", "assignment": "Create a next-hour safety and support plan for heroin-related cravings or exposure.", "reflection": "Which situation most increases risk, and who can help before it escalates?", "community": "Opioid recovery safety and support group"},
-    "Stimulants": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "emotional-regulation", "resource": "Stimulant-specific craving management, sleep recovery, emotional regulation, nervous-system support, and real-world recovery experiences.", "assignment": "Track stimulant triggers, crash patterns, sleep needs, and emotional regulation tools for one week.", "reflection": "What feeling, pressure, or environment most often precedes stimulant urges?", "community": "Stimulant recovery regulation group"},
-    "Methamphetamine": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "emotional-regulation", "resource": "Methamphetamine-specific craving education, sleep restoration, emotional regulation, psychosis-risk awareness, and recovery planning.", "assignment": "Build a methamphetamine recovery stabilization plan focused on sleep, nutrition, support, and high-risk people/places.", "reflection": "What helps your nervous system settle after high stimulation or exhaustion?", "community": "Stimulant recovery regulation group"},
-    "Cocaine": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "emotional-regulation", "resource": "Cocaine-specific trigger awareness, craving wave planning, mood regulation, social-risk planning, and relapse prevention.", "assignment": "Map cocaine-related social, emotional, and financial triggers with replacement actions.", "reflection": "Which craving cue shows up first: emotion, place, person, money, or opportunity?", "community": "Stimulant recovery regulation group"},
-    "Crack Cocaine": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "emotional-regulation", "resource": "Crack cocaine-specific recovery education, urgent craving planning, environment changes, support routines, and emotional regulation.", "assignment": "Design a rapid craving interruption plan with exit steps, support calls, and grounding actions.", "reflection": "What is the earliest sign that a high-risk moment is building?", "community": "Stimulant recovery regulation group"},
+    "Stimulants": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "stimulant-recovery-regulation", "resource": "Stimulant-specific craving management, sleep recovery, emotional regulation, nervous-system support, and real-world recovery experiences.", "assignment": "Track stimulant triggers, crash patterns, sleep needs, and emotional regulation tools for one week.", "reflection": "What feeling, pressure, or environment most often precedes stimulant urges?", "community": "Stimulant recovery regulation group"},
+    "Methamphetamine": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "stimulant-recovery-regulation", "resource": "Methamphetamine-specific craving education, sleep restoration, emotional regulation, psychosis-risk awareness, and recovery planning.", "assignment": "Build a methamphetamine recovery stabilization plan focused on sleep, nutrition, support, and high-risk people/places.", "reflection": "What helps your nervous system settle after high stimulation or exhaustion?", "community": "Stimulant recovery regulation group"},
+    "Cocaine": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "stimulant-recovery-regulation", "resource": "Cocaine-specific trigger awareness, craving wave planning, mood regulation, social-risk planning, and relapse prevention.", "assignment": "Map cocaine-related social, emotional, and financial triggers with replacement actions.", "reflection": "Which craving cue shows up first: emotion, place, person, money, or opportunity?", "community": "Stimulant recovery regulation group"},
+    "Crack Cocaine": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "stimulant-recovery-regulation", "resource": "Crack cocaine-specific recovery education, urgent craving planning, environment changes, support routines, and emotional regulation.", "assignment": "Design a rapid craving interruption plan with exit steps, support calls, and grounding actions.", "reflection": "What is the earliest sign that a high-risk moment is building?", "community": "Stimulant recovery regulation group"},
     "Cannabis": {"pathway": "life-skills", "professor_id": "compass", "course_id": "daily-life-systems", "resource": "Cannabis-specific habit awareness, motivation, sleep, anxiety, routine rebuilding, and relapse prevention.", "assignment": "Track cannabis use cues and design one replacement routine for evenings, sleep, or boredom.", "reflection": "What need is cannabis usually trying to meet for you?", "community": "Cannabis habit reset group"},
     "Benzodiazepines": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Benzodiazepine-specific safety education, withdrawal-risk awareness, professional support planning, anxiety tools, and relapse prevention.", "assignment": "Write a medical-support question list and a calming plan that does not require sudden medication changes.", "reflection": "What anxiety or sleep pattern needs safer support?", "community": "Medication recovery support circle"},
     "Nicotine/Tobacco": {"pathway": "life-skills", "professor_id": "compass", "course_id": "daily-life-systems", "resource": "Nicotine-specific cue awareness, replacement routines, craving timing, stress skills, and habit redesign.", "assignment": "Create a nicotine cue map with one replacement action for each common trigger.", "reflection": "Which nicotine cue is most automatic: stress, boredom, after meals, driving, or social moments?", "community": "Nicotine habit change group"},
-    "Gambling": {"pathway": "financial-freedom", "professor_id": "prosper", "course_id": "money-stability", "resource": "Gambling-specific urge planning, financial safeguards, accountability, trigger blocking, and repair routines.", "assignment": "Build a gambling safety plan with spending blocks, support accountability, and debt visibility.", "reflection": "What emotion or belief most often appears before gambling urges?", "community": "Gambling recovery accountability group"},
-    "Gaming": {"pathway": "life-skills", "professor_id": "compass", "course_id": "daily-life-systems", "resource": "Gaming-specific time boundaries, dopamine reset, sleep/routine rebuilding, and life-balance planning.", "assignment": "Design a gaming boundary plan with time limits, replacement activities, and accountability.", "reflection": "What does gaming help you avoid, feel, or control?", "community": "Digital balance group"},
+    "Gambling": {"pathway": "financial-freedom", "professor_id": "prosper", "course_id": "gambling-recovery-accountability", "resource": "Gambling-specific urge planning, financial safeguards, accountability, trigger blocking, and repair routines.", "assignment": "Build a gambling safety plan with spending blocks, support accountability, and debt visibility.", "reflection": "What emotion or belief most often appears before gambling urges?", "community": "Gambling recovery accountability group"},
+    "Gaming": {"pathway": "life-skills", "professor_id": "compass", "course_id": "gaming-balance-reset", "resource": "Gaming-specific time boundaries, dopamine reset, sleep/routine rebuilding, and life-balance planning.", "assignment": "Design a gaming boundary plan with time limits, replacement activities, and accountability.", "reflection": "What does gaming help you avoid, feel, or control?", "community": "Digital balance group"},
     "Pornography/Sexual Behavior": {"pathway": "relationships", "professor_id": "voice", "course_id": "healthy-relationships", "resource": "Compulsive sexual behavior education, shame reduction, trigger mapping, boundaries, repair, and healthy intimacy skills.", "assignment": "Map triggers, secrecy patterns, and one repair/boundary action that supports integrity.", "reflection": "What emotion or situation most often precedes sexual behavior you want to change?", "community": "Healthy intimacy recovery group"},
     "Food and Eating Behaviors": {"pathway": "physical-wellness", "professor_id": "strength", "course_id": "body-recovery", "resource": "Food/eating behavior support, body care, emotional eating awareness, routine stabilization, and compassionate support planning.", "assignment": "Track eating-behavior triggers with body-care needs and one non-shaming support action.", "reflection": "What does your body or emotion need before the behavior happens?", "community": "Body care and food behavior support group"},
     "Multiple Substances": {"pathway": "active-addiction", "professor_id": "hope", "course_id": "stabilization-today", "resource": "Multiple-substance safety planning, interaction-risk awareness, stabilization, support readiness, and layered relapse prevention.", "assignment": "Create a combined risk map covering substances, interactions, environments, and support contacts.", "reflection": "Which substance or situation creates the highest immediate risk?", "community": "Complex recovery planning group"},
-    "Supporting a Loved One": {"pathway": "family-member", "professor_id": "bridge", "course_id": "family-communication", "resource": "Family recovery education, boundaries, communication, safety planning, and support without rescuing.", "assignment": "Write one supportive boundary, one repair phrase, and one crisis/safety contact plan.", "reflection": "Where do love and over-responsibility feel tangled right now?", "community": "Family recovery support group"},
-    "Mental Wellness Only": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "emotional-regulation", "resource": "Mental wellness education, mood tracking, grounding, journaling, emotional regulation, and support planning.", "assignment": "Create a mood-pattern map with grounding tools and one weekly support routine.", "reflection": "Which mood pattern most needs compassion and structure?", "community": "Mental wellness practice group"},
+    "Supporting a Loved One": {"pathway": "family-member", "professor_id": "bridge", "course_id": "family-support-foundations", "resource": "Family recovery education, boundaries, communication, safety planning, and support without rescuing.", "assignment": "Write one supportive boundary, one repair phrase, and one crisis/safety contact plan.", "reflection": "Where do love and over-responsibility feel tangled right now?", "community": "Family recovery support group"},
+    "Mental Wellness Only": {"pathway": "mental-wellness", "professor_id": "insight", "course_id": "mental-wellness-foundations", "resource": "Mental wellness education, mood tracking, grounding, journaling, emotional regulation, and support planning.", "assignment": "Create a mood-pattern map with grounding tools and one weekly support routine.", "reflection": "Which mood pattern most needs compassion and structure?", "community": "Mental wellness practice group"},
     "Other": {"pathway": "early-recovery", "professor_id": "hope", "course_id": "recovery-foundations", "resource": "Personalized recovery education combining universal principles, student-defined concerns, support planning, and next-step guidance.", "assignment": "Describe the concern in your own words and identify one support action for this week.", "reflection": "What would you most like ClearPath to understand about what brings you here?", "community": "Personalized recovery support group"},
 }
 
@@ -492,6 +549,26 @@ def public_program_summary(program: Dict[str, Any]) -> Dict[str, Any]:
         "preview_only": True,
     }
 
+
+def focus_curriculum_pack(focus: str) -> Dict[str, Any]:
+    plan = FOCUS_PERSONALIZATION.get(focus, FOCUS_PERSONALIZATION["Other"])
+    return {
+        "focus": focus,
+        "lesson_titles": [
+            f"Understanding {focus} patterns without shame",
+            f"Triggers, cravings, and risk moments for {focus}",
+            f"Recovery skills and support planning for {focus}",
+            f"Relapse prevention and real-world practice for {focus}",
+        ],
+        "assignments": [plan["assignment"], f"Create a {focus} relapse-prevention card", f"Identify three {focus} recovery resources or support contacts"],
+        "resources": [plan["resource"], "Universal recovery principles: safety, honesty, support, routines, repair, and hope"],
+        "journey": ["Orientation", "Stabilization", "Skill practice", "Support connection", "Relapse prevention", "Long-term growth"],
+        "community": plan["community"],
+    }
+
+
+FOCUS_CURRICULUM_PACKS = {focus: focus_curriculum_pack(focus) for focus in ["Alcohol", "Opioids", "Fentanyl", "Stimulants", "Gambling", "Gaming", "Supporting a Loved One", "Mental Wellness Only"]}
+
 EVENTS = [
     {"id": "event-community-welcome", "title": "Community Welcome Meeting", "type": "community_meeting", "professor_id": "compass", "starts_at": "2026-06-15T18:00:00+00:00", "duration_minutes": 45, "languages": ["en", "es", "fr", "pt", "de", "ar"], "description": "A weekly orientation-style gathering for connection, safety, and next-step planning.", "replay_available": True},
     {"id": "event-family-night", "title": "Family Recovery Night", "type": "workshop", "professor_id": "bridge", "starts_at": "2026-06-18T19:00:00+00:00", "duration_minutes": 60, "languages": ["en", "es", "fr", "pt", "de", "ar"], "description": "Boundary and repair workshop for family members and loved ones.", "replay_available": True},
@@ -501,6 +578,7 @@ EVENTS = [
 PLANS = {
     "free": {"id": "free", "name": "Free", "amount": 0.0, "currency": "usd", "features": ["Limited courses", "Basic AI access"]},
     "premium": {"id": "premium", "name": "Premium", "amount": 19.99, "currency": "usd", "features": ["Full course access", "AI professors", "Progress tracking", "Certificates"]},
+    "premium_annual": {"id": "premium_annual", "name": "Premium Annual", "amount": 199.0, "currency": "usd", "features": ["Full course access", "AI professors", "Progress tracking", "Certificates", "Two months savings"]},
 }
 
 
@@ -800,7 +878,9 @@ async def save_onboarding(payload: OnboardingRequest, user: Dict[str, Any] = Dep
         "updated_at": now_iso(),
     }
     if not has_existing_onboarding and not has_seen_dashboard:
-        user_update.update({"has_completed_first_login": False, "has_visited_dashboard": False, "dashboard_visit_count": 0})
+        trial_start = datetime.now(timezone.utc)
+        trial_end = trial_start + timedelta(days=7)
+        user_update.update({"has_completed_first_login": False, "has_visited_dashboard": False, "dashboard_visit_count": 0, "subscription_status": "premium_trial", "trial_start_at": trial_start.isoformat(), "trial_end_at": trial_end.isoformat(), "trial_expired": False})
     profile = {
         "id": str(uuid.uuid4()),
         "user_id": user["id"],
@@ -826,6 +906,8 @@ async def save_onboarding(payload: OnboardingRequest, user: Dict[str, Any] = Dep
         {"$set": {"user_id": user["id"], "profile": profile, "updated_at": now_iso()}},
         upsert=True,
     )
+    if not has_existing_onboarding and not has_seen_dashboard:
+        await db.subscriptions.update_one({"user_id": user["id"]}, {"$set": {"id": str(uuid.uuid4()), "user_id": user["id"], "plan_id": "premium_trial", "billing_status": "trialing", "trial_start_at": user_update["trial_start_at"], "trial_end_at": user_update["trial_end_at"], "updated_at": now_iso()}}, upsert=True)
     return {"profile": profile, "roadmap": profile["roadmap"]}
 
 
@@ -884,7 +966,7 @@ async def public_preview():
         "programs": [public_program_summary(program) for program in PROGRAMS],
         "sample_lessons": sample_lessons,
         "pricing": list(PLANS.values()),
-        "features": ["Personalized onboarding", "AI Professor directory", "Semester programs", "Sample lessons", "Certificates", "Live classes after enrollment", "Journaling and progress tracking after enrollment"],
+        "features": ["7-day Premium trial after onboarding", "Personalized onboarding", "AI Professor directory", "Semester programs", "Sample lessons", "Certificates", "Live classes after enrollment", "Journaling and progress tracking after enrollment"],
         "success_stories": [
             {"name": "Maya", "story": "Found structure through short lessons, daily check-ins, and Professor Hope’s recovery roadmap."},
             {"name": "Jordan", "story": "Used family recovery courses and Professor Bridge to rebuild safer conversations."},
@@ -1117,6 +1199,14 @@ async def get_learning_plan(user: Dict[str, Any] = Depends(get_current_user)):
     return {"learning_plan": profile.get("individual_learning_plan") or build_individual_learning_plan(profile)}
 
 
+@api_router.get("/focus/curriculum")
+async def focus_curriculum(user: Dict[str, Any] = Depends(get_current_user)):
+    profile = await db.assessments.find_one({"user_id": user["id"]}, {"_id": 0}, sort=[("created_at", -1)]) or {}
+    focuses = profile.get("primary_recovery_focus") or []
+    packs = [FOCUS_CURRICULUM_PACKS.get(focus, focus_curriculum_pack(focus)) for focus in focuses]
+    return {"focus_curriculum": packs}
+
+
 @api_router.post("/learning-plan")
 async def create_learning_plan(payload: LearningPlanRequest, user: Dict[str, Any] = Depends(get_current_user)):
     profile = await db.assessments.find_one({"user_id": user["id"]}, {"_id": 0}, sort=[("created_at", -1)]) or {}
@@ -1144,7 +1234,7 @@ async def list_courses(user: Dict[str, Any] = Depends(get_current_user)):
     progress = {item["course_id"]: item for item in enrollments}
     for course in courses:
         course["enrollment"] = progress.get(course["id"])
-        course["locked"] = bool(course.get("premium")) and user.get("subscription_status") != "premium"
+        course["locked"] = bool(course.get("premium")) and not has_premium_access(user)
     return {"courses": courses}
 
 
@@ -1153,7 +1243,7 @@ async def enroll_course(course_id: str, user: Dict[str, Any] = Depends(get_curre
     course = await db.courses.find_one({"id": course_id}, {"_id": 0})
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
-    if course.get("premium") and user.get("subscription_status") != "premium":
+    if course.get("premium") and not has_premium_access(user):
         raise HTTPException(status_code=402, detail="Premium plan required")
     enrollment = {"id": str(uuid.uuid4()), "user_id": user["id"], "course_id": course_id, "progress_percentage": 0, "completed_lessons": [], "created_at": now_iso(), "updated_at": now_iso()}
     await db.enrollments.update_one({"user_id": user["id"], "course_id": course_id}, {"$setOnInsert": enrollment}, upsert=True)
@@ -1165,7 +1255,7 @@ async def get_course(course_id: str, user: Dict[str, Any] = Depends(get_current_
     course = await db.courses.find_one({"id": course_id}, {"_id": 0})
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
-    if course.get("premium") and user.get("subscription_status") != "premium":
+    if course.get("premium") and not has_premium_access(user):
         raise HTTPException(status_code=402, detail="Premium plan required")
     lessons = await db.lessons.find({"course_id": course_id}, {"_id": 0}).to_list(100)
     enrollment = await db.enrollments.find_one({"user_id": user["id"], "course_id": course_id}, {"_id": 0})
@@ -1281,7 +1371,7 @@ async def dashboard(user: Dict[str, Any] = Depends(get_current_user)):
         assigned_professor = PROFESSORS.get((focus_plan or {}).get("professor_id") or selected_pathway.get("professor_id"), PROFESSORS["hope"])
     first_visit_experience = {
         "is_first_session": is_first_dashboard_visit,
-        "welcome_message": f"Welcome to ClearPath, {user['name']}" if is_first_dashboard_visit else f"Welcome back, {user['name']}",
+        "welcome_message": f"Welcome to ClearPath Recovery University, {user['name']}" if is_first_dashboard_visit else f"Welcome back, {user['name']}",
         "roadmap_summary": profile.get("roadmap", [])[:4] if profile else [],
         "recommended_first_course": recommended_course,
         "assigned_ai_professor": assigned_professor,
@@ -1289,9 +1379,10 @@ async def dashboard(user: Dict[str, Any] = Depends(get_current_user)):
         "focus_recommendations": focus_recommendations,
         "next_steps": [
             "Review your personalized roadmap",
-            "Enroll in your recommended first course",
-            "Meet your assigned AI Professor",
+            f"Start your recommended course: {recommended_course['title'] if recommended_course else 'Recovery Foundations'}",
+            f"Meet {assigned_professor['name'] if assigned_professor else 'your AI Professor'}",
             "Complete your first daily check-in",
+            "Use your 7-day Premium trial to explore all schools and features",
         ] if is_first_dashboard_visit else [],
     }
     return {
@@ -1310,6 +1401,7 @@ async def dashboard(user: Dict[str, Any] = Depends(get_current_user)):
         "recommendations": recommendations,
         "focus_recommendations": focus_recommendations,
         "notifications": ["Your personalized roadmap is ready", "Daily reflection reminder", "New lesson recommendation available"],
+        "trial": {"active": user.get("subscription_status") == "premium_trial" and trial_days_remaining(user) > 0, "days_remaining": trial_days_remaining(user), "trial_end_at": user.get("trial_end_at")},
     }
 
 
@@ -1345,6 +1437,8 @@ async def ai_chat_stream(payload: AIChatRequest, user: Dict[str, Any] = Depends(
         "Never claim to be emergency care; if crisis risk is mentioned, encourage contacting local emergency services or trusted support. "
         f"Greet returning students by name ({user['name']}) and reference progress when relevant. "
         f"Personalize for primary recovery focus using universal recovery principles plus specialized education. Focus-specific guidance: {focus_context}. "
+        f"Remember and reference recovery stage, treatment/support history, duration affecting life, goals, completed coursework, attendance history, support interactions, and prior conversations. "
+        f"If the student is supporting a loved one, do not speak as if they are the substance user; teach boundaries, communication, safety planning, compassion, and support without rescuing. "
         f"Student profile: {profile or {}}. Recent check-ins: {recent_checkins}. Enrollments: {enrollments}. Journal insights if permitted: {journals}."
     )
 
@@ -1569,8 +1663,10 @@ async def checkout_status(session_id: str, request: Request, user: Dict[str, Any
     update = {"status": status.status, "payment_status": status.payment_status, "updated_at": now_iso()}
     if status.payment_status == "paid" and not transaction.get("processed"):
         update["processed"] = True
-        await db.users.update_one({"id": user["id"]}, {"$set": {"subscription_status": "premium", "updated_at": now_iso()}})
-        await db.subscriptions.update_one({"user_id": user["id"]}, {"$set": {"id": str(uuid.uuid4()), "user_id": user["id"], "plan_id": "premium", "billing_status": "active", "updated_at": now_iso()}}, upsert=True)
+        plan_id = transaction.get("plan_id", "premium")
+        status_value = "premium_annual" if plan_id == "premium_annual" else "premium"
+        await db.users.update_one({"id": user["id"]}, {"$set": {"subscription_status": status_value, "updated_at": now_iso()}})
+        await db.subscriptions.update_one({"user_id": user["id"]}, {"$set": {"id": str(uuid.uuid4()), "user_id": user["id"], "plan_id": plan_id, "billing_status": "active", "updated_at": now_iso()}}, upsert=True)
     await db.payment_transactions.update_one({"session_id": session_id}, {"$set": update})
     return {"status": status.status, "payment_status": status.payment_status, "amount_total": status.amount_total, "currency": status.currency, "metadata": status.metadata}
 
@@ -1585,7 +1681,8 @@ async def stripe_webhook(request: Request):
     response = await stripe_checkout.handle_webhook(body, request.headers.get("Stripe-Signature"))
     await db.payment_transactions.update_one({"session_id": response.session_id}, {"$set": {"payment_status": response.payment_status, "status": response.event_type, "updated_at": now_iso()}})
     if response.payment_status == "paid" and response.metadata.get("user_id"):
-        await db.users.update_one({"id": response.metadata["user_id"]}, {"$set": {"subscription_status": "premium", "updated_at": now_iso()}})
+        plan_id = response.metadata.get("plan_id", "premium")
+        await db.users.update_one({"id": response.metadata["user_id"]}, {"$set": {"subscription_status": "premium_annual" if plan_id == "premium_annual" else "premium", "updated_at": now_iso()}})
     return {"received": True, "event_type": response.event_type}
 
 

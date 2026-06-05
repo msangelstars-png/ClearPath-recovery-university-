@@ -1,0 +1,43 @@
+{
+  "summary": "Executed targeted backend + frontend regression for premium trial, first-time dashboard, annual plan pricing, focus personalization, family-member routing, and returning-user onboarding behavior.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "N/A (test environment dependency)",
+        "issue": "Auto-downgrade persistence verification via direct DB mutation was skipped because MONGO_URL/DB_NAME were not available to pytest process in this run. API-level behavior around trial fields was validated, but forced-expiration persistence path needs retest in an environment exposing backend DB vars to tests."
+      }
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_trial_dashboard_focus_regression.py",
+    "/app/test_reports/pytest/pytest_results_iteration_12_trial_dashboard_focus.xml",
+    "/root/.emergent/automation_output/20260605_054557/console_20260605_054557.log"
+  ],
+  "action_items": [
+    "Re-run the 2 skipped backend tests in an environment where MONGO_URL and DB_NAME are available to pytest so forced trial-expiration downgrade path can be fully verified end-to-end.",
+    "Keep test_trial_dashboard_focus_regression.py in regression suite for future premium-trial and focus-routing changes."
+  ],
+  "critical_code_review_comments": [
+    "server.py is still very large (>1700 lines), increasing regression risk across auth/subscription/onboarding/focus logic; split into focused modules (auth, onboarding, subscriptions, dashboard, AI) to improve maintainability and RCA speed."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_trial_dashboard_focus_regression.py",
+    "/app/test_reports/iteration_12.json"
+  ],
+  "success_rate": {
+    "backend": "87.5% (14/16 targeted tests passed; 2 skipped due env exposure)",
+    "frontend": "100% (6/6 targeted UI flow validations passed)"
+  },
+  "test_credentials": "Read from /app/memory/test_credentials.md and used seeded student credentials for returning-user regression. Also used newly generated UI/backend test users.",
+  "seed_data_creation": "Created isolated test users via /api/auth/register and UI registration during this run.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Core requested flows validated: new onboarded users get premium_trial + 7 days, premium courses unlock during trial, dashboard first-visit copy/trial payload renders, Premium Annual $199/year appears in API/UI, focus-specific first-course routing works for Alcohol/Opioids/Fentanyl/Stimulants/Gambling/Gaming/Mental Wellness, Supporting a Loved One routes to Professor Bridge + family content, returning seeded user remains Welcome back after onboarding resubmission. Only remaining gap is forced-expiration auto-downgrade persistence test due missing DB env exposure in pytest runtime.",
+  "rca of the issue": "Skipped-case RCA: tests that simulate expiration require direct DB update of user.trial_end_at. In this execution context, MONGO_URL/DB_NAME were unavailable to pytest process, so expiration simulation could not run. Mitigation: expose backend env vars to test runner (or provide a protected test-only endpoint for subscription test fixtures) and rerun those two tests."
+}

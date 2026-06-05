@@ -57,6 +57,7 @@ export const platformApi = {
   professors: () => api.get("/professors"),
   pathways: () => api.get("/pathways"),
   learningPlan: () => api.get("/learning-plan"),
+  focusCurriculum: () => api.get("/focus/curriculum"),
   saveLearningPlan: (payload) => api.post("/learning-plan", payload),
   classes: () => api.get("/classes"),
   classDetail: (id) => api.get(`/classes/${id}`),
