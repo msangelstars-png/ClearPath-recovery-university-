@@ -478,6 +478,20 @@ def generate_programs() -> List[Dict[str, Any]]:
 
 PROGRAMS = generate_programs()
 
+
+def public_program_summary(program: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "id": program["id"],
+        "school_id": program["school_id"],
+        "school_name": program["school_name"],
+        "description": program["description"],
+        "professor": program["professor"],
+        "semester_count": program.get("semester_count", 4),
+        "graduation_pathway": program.get("graduation_pathway", []),
+        "track_count": len(program.get("tracks", [])),
+        "preview_only": True,
+    }
+
 EVENTS = [
     {"id": "event-community-welcome", "title": "Community Welcome Meeting", "type": "community_meeting", "professor_id": "compass", "starts_at": "2026-06-15T18:00:00+00:00", "duration_minutes": 45, "languages": ["en", "es", "fr", "pt", "de", "ar"], "description": "A weekly orientation-style gathering for connection, safety, and next-step planning.", "replay_available": True},
     {"id": "event-family-night", "title": "Family Recovery Night", "type": "workshop", "professor_id": "bridge", "starts_at": "2026-06-18T19:00:00+00:00", "duration_minutes": 60, "languages": ["en", "es", "fr", "pt", "de", "ar"], "description": "Boundary and repair workshop for family members and loved ones.", "replay_available": True},
@@ -867,7 +881,7 @@ async def public_preview():
         "schools": SCHOOLS,
         "courses": COURSES,
         "professors": [{"id": key, **value} for key, value in PROFESSORS.items()],
-        "programs": [{"id": program["id"], "school_id": program["school_id"], "school_name": program["school_name"], "description": program["description"], "professor": program["professor"], "graduation_pathway": program["graduation_pathway"], "track_count": len(program["tracks"])} for program in PROGRAMS],
+        "programs": [public_program_summary(program) for program in PROGRAMS],
         "sample_lessons": sample_lessons,
         "pricing": list(PLANS.values()),
         "features": ["Personalized onboarding", "AI Professor directory", "Semester programs", "Sample lessons", "Certificates", "Live classes after enrollment", "Journaling and progress tracking after enrollment"],
@@ -882,6 +896,8 @@ async def public_preview():
 @api_router.get("/programs")
 async def list_programs(user: Optional[Dict[str, Any]] = Depends(get_optional_user)):
     programs = await db.programs.find({}, {"_id": 0}).to_list(200)
+    if not user:
+        return {"programs": [public_program_summary(program) for program in programs]}
     progress = await db.program_progress.find({"user_id": user["id"]}, {"_id": 0}).to_list(500) if user else []
     progress_map = {(item["program_id"], item["track_id"]): item for item in progress}
     for program in programs:
@@ -895,6 +911,8 @@ async def get_program(program_id: str, user: Optional[Dict[str, Any]] = Depends(
     program = await db.programs.find_one({"id": program_id}, {"_id": 0})
     if not program:
         raise HTTPException(status_code=404, detail="Program not found")
+    if not user:
+        return {"program": public_program_summary(program), "submissions": [], "enrollment_prompt": "Create your free account to continue your personalized recovery journey."}
     submissions = await db.assignment_submissions.find({"user_id": user["id"], "program_id": program_id}, {"_id": 0}).to_list(500) if user else []
     return {"program": program, "submissions": submissions}
 
