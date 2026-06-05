@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Award } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { PageShell } from "@/components/Layout";
 import { platformApi } from "@/services/api";
 import { media } from "@/data/platform";

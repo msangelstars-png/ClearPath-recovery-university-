@@ -22,11 +22,11 @@ export function TopNav() {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
-    <header className="sticky top-0 z-40 border-b border-brand-border bg-brand-base/95 backdrop-blur-md" data-testid="top-navigation">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-3" data-testid="brand-home-link">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-primary text-white"><GraduationCap size={22} /></span>
-          <span className="whitespace-nowrap font-heading text-base font-semibold text-brand-dark xl:text-lg">ClearPath Recovery University</span>
+    <header className="sticky top-0 z-40 max-w-full overflow-x-hidden border-b border-brand-border bg-brand-base/95 backdrop-blur-md" data-testid="top-navigation">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-2 px-3 py-4 sm:px-6 lg:px-8">
+        <Link to={user ? "/dashboard" : "/"} className="flex min-w-0 items-center gap-2 sm:gap-3" data-testid="brand-home-link">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-primary text-white sm:h-10 sm:w-10"><GraduationCap size={22} /></span>
+          <span className="min-w-0 truncate whitespace-nowrap font-heading text-base font-semibold text-brand-dark xl:text-lg">ClearPath<span className="hidden sm:inline"> Recovery University</span></span>
         </Link>
         <nav className="hidden items-center gap-0 xl:flex" data-testid="desktop-navigation-links">
           {user && navItems.map(([label, href]) => (
@@ -34,20 +34,20 @@ export function TopNav() {
           ))}
           {user?.role === "admin" && <NavLink to="/admin" data-testid="nav-link-admin" className="whitespace-nowrap rounded-full px-2.5 py-2 text-xs text-brand-charcoal hover:bg-brand-card 2xl:px-3 2xl:text-sm">Admin</NavLink>}
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           {!user ? (
             <Button onClick={() => navigate("/auth")} data-testid="nav-start-button" className="rounded-full bg-brand-primary px-5 text-white hover:bg-brand-primaryHover"><Sparkles size={16} /> Start</Button>
           ) : (
-            <Button variant="outline" onClick={() => { logout(); navigate("/"); }} data-testid="logout-button" className="rounded-full border-brand-border bg-white"><LogOut size={16} /> Logout</Button>
+            <Button variant="outline" onClick={() => { logout(); navigate("/"); }} data-testid="logout-button" className="h-10 w-10 rounded-full border-brand-border bg-white p-0 sm:w-auto sm:px-4"><LogOut size={16} /> <span className="hidden sm:inline">Logout</span></Button>
           )}
           {user && <Button variant="ghost" onClick={() => setMobileOpen(!mobileOpen)} data-testid="mobile-menu-button" className="xl:hidden"><Menu size={18} /></Button>}
         </div>
       </div>
       {user && mobileOpen && (
         <nav className="border-t border-brand-border px-4 py-3 xl:hidden" data-testid="mobile-navigation-links">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex max-w-full flex-wrap gap-2 overflow-hidden">
             {navItems.map(([label, href]) => (
-              <NavLink key={href} to={href} onClick={() => setMobileOpen(false)} data-testid={`mobile-nav-link-${label.toLowerCase().replaceAll(" ", "-")}`} className={({ isActive }) => `rounded-full px-3 py-2 text-sm transition-colors ${isActive ? "bg-brand-card text-brand-primary" : "text-brand-charcoal hover:bg-brand-card"}`}>{label}</NavLink>
+              <NavLink key={href} to={href} onClick={() => setMobileOpen(false)} data-testid={`mobile-nav-link-${label.toLowerCase().replaceAll(" ", "-")}`} className={({ isActive }) => `max-w-full rounded-full px-3 py-2 text-sm transition-colors ${isActive ? "bg-brand-card text-brand-primary" : "text-brand-charcoal hover:bg-brand-card"}`}>{label}</NavLink>
             ))}
             {user?.role === "admin" && <NavLink to="/admin" onClick={() => setMobileOpen(false)} data-testid="mobile-nav-link-admin" className="rounded-full px-3 py-2 text-sm text-brand-charcoal hover:bg-brand-card">Admin</NavLink>}
           </div>
