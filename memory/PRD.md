@@ -134,3 +134,14 @@ Build a fully functional platform called ClearPath Recovery University: a person
 - Stored recovery focus in assessment/profile and AI memory; used it to personalize roadmap, learning plan, dashboard recommendations, recommended first course, assigned AI professor, resource recommendations, community recommendations, assignments, reflections, relapse prevention planning, and AI Professor prompt context.
 - Added first-visit focus-specific personalization panel on dashboard.
 - Regression passed: `/app/test_reports/iteration_9.json` and `/app/test_reports/pytest/pytest_results_iteration_9_focus.xml`.
+
+
+## Feature Addition — Visitor Preview Access + Extended Onboarding Assessment — 2026-06-05
+- Added visitor preview experience so non-registered visitors can browse schools, course catalog, AI Professor directory, sample lessons, program descriptions, success stories, pricing, and platform features.
+- Protected personalized/private areas with friendly enrollment prompt: “Create your free account to continue your personalized recovery journey.”
+- Restricted visitor access to dashboard, personalized roadmaps, full lessons, AI conversations, live classes, replays, certificates, assignments, progress tracking, journals, support tickets, documents, and other student-only features.
+- Added `/api/public/preview` with visitor-safe summaries for schools, courses, professors, programs, sample lessons, pricing, features, and success stories.
+- Hardened `/api/programs` and `/api/programs/{program_id}` so anonymous users receive summary-only program previews without tracks/modules/assignments; authenticated students still receive full curriculum data.
+- Added onboarding questions directly after primary recovery focus: “How long has this been affecting your life?” and “Have you received treatment or recovery support before?”
+- Stored `duration_affecting_life` and `previous_treatment_support` in profile/assessment and used them in roadmap and learning-plan personalization.
+- Regression passed: `/app/test_reports/iteration_11.json` and visitor access control tests.
