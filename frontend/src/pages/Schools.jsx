@@ -29,6 +29,7 @@ export default function Schools() {
       setError("Schools and courses could not load. Please refresh and try again.");
     }
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { refresh(); }, [user]);
   const enrollSchool = async (id) => { if (!user) { setError("Create your free account to continue your personalized recovery journey."); return; } try { await platformApi.enrollSchool(id); refresh(); } catch { setError("School enrollment could not be completed."); } };
   const enrollCourse = async (id) => { if (!user) { setError("Create your free account to continue your personalized recovery journey."); return; } try { await platformApi.enrollCourse(id); refresh(); } catch (err) { setError(err.response?.data?.detail || "Course enrollment could not be completed."); } };
