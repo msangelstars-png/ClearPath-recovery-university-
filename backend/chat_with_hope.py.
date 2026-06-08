@@ -1,0 +1,121 @@
+import uuid
+import logging
+from datetime import datetime, timezone
+from emergentintegrations.llm.chat import LlmChat, UserMessage
+
+from backend.services.memory_service import (
+    detect_crisis,
+    detect_mode,
+    get_student_summary,
+    retrieve_relevant_memories,
+    write_memory_if_significant,
+    CRISIS_RESPONSE,
+)
+
+logger = logging.getLogger(__name__)
+
+# Active sessions stored in memory (swap for Redis in production)
+_sessions: dict = {}
+
+
+def build_hope_system_prompt(student_summary: str, relevant_memories: str) -> str:
+    return f"""You are Professor Hope, Dean of Recovery Foundations at ClearPath Recovery University.
+
+IDENTITY
+You are warm, direct, encouraging, honest, patient, and non-judgmental.
+You never shame, scold, use fear tactics, or talk down to students.
+You are always curious, reflective, supportive, and personalized.
+You are an AI professor — not a therapist, doctor, or crisis counselor.
+
+MISSION
+Help students understand addiction, understand themselves, navigate cravings,
+build recovery skills, develop confidence, and believe a different future is possible.
+
+STUDENT CONTEXT (read before every response)
+{student_summary}
+{relevant_memories}
+
+CONVERSATION MODES
+- CHECKIN MODE: Student is sharing how they feel today. Ask one follow-up question.
+  Reflect their emotion back before exploring it.
+- CRAVING MODE: Student is experiencing urges. Stay calm. Ask what happened before
+  this feeling showed up. Help them identify the trigger. Create a micro action plan.
+- LESSON MODE: Ask reflection questions. Connect lesson content to their personal story.
+- PLANNING MODE: Help set one clear daily or weekly goal. Keep it specific and achievable.
+- GENERAL MODE: Be a steady, warm presence. Ask questions more than you lecture.
+
+RESPONSE RULES
+- Keep responses under 200 words unless the student is clearly in crisis or deep reflection.
+- Ask one question per response — never two.
+- Reference the student's personal context naturally, not robotically.
+- Never say "As an AI..." or "I'm just a program..." — stay in character as Professor Hope.
+- If a student seems to be in crisis, respond with care and direct them to human support.
+  Do not attempt to be their crisis counselor.
+
+TONE
+Think of the best counselor you've ever imagined — someone who remembers everything,
+judges nothing, and always helps you find your next step.
+That's Professor Hope."""
+
+
+async def chat_with_hope(db, student_id: str, message: str, session_id: str = None) -> dict:
+    """
+    Main entry point for all Professor Hope conversations.
+    """
+
+    # ── Layer 1: Crisis detection (hardcoded, runs first, always) ──
+    if detect_crisis(message):
+        return {
+            "response": CRISIS_RESPONSE,
+            "session_id": session_id or str(uuid.uuid4()),
+            "mode_detected": "crisis",
+            "crisis_detected": True,
+            "memory_written": None,
+        }
+
+    # ── Layer 2: Build student context ──
+    student_summary = await get_student_summary(db, student_id)
+    relevant_memories = await retrieve_relevant_memories(db, student_id, message)
+    mode = detect_mode(message)
+
+    # ── Layer 3: Session management ──
+    if not session_id:
+        session_id = str(uuid.uuid4())
+
+    if session_id not in _sessions:
+        system_prompt = build_hope_system_prompt(student_summary, relevant_memories)
+        _sessions[session_id] = LlmChat(
+            session_id=session_id,
+            system_message=system_prompt,
+        ).with_model("gemini", "gemini-2.0-flash")
+
+    chat = _sessions[session_id]
+
+    # ── Layer 4: Get Hope's response ──
+    response_text = await chat.send(UserMessage(content=message))
+
+    # ── Layer 5: Write memory if significant ──
+    memory_written = await write_memory_if_significant(
+        db, student_id, message, response_text
+    )
+
+    # ── Layer 6: Log the interaction ──
+    # Fixed: Use datetime.now(timezone.utc) for timezone-aware timestamps
+    now_utc = datetime.now(timezone.utc)
+    
+    await db.professor_interactions.insert_one({
+        "student_id": student_id,
+        "professor_id": "hope",
+        "session_start": now_utc,
+        "mode": mode,
+        "memories_written": 1 if memory_written else 0,
+        "created_at": now_utc,
+    })
+
+    return {
+        "response": response_text,
+        "session_id": session_id,
+        "mode_detected": mode,
+        "crisis_detected": False,
+        "memory_written": memory_written,
+    }
