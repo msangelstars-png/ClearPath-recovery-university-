@@ -14,6 +14,7 @@ export default function CourseDetail() {
   const [reflections, setReflections] = useState({});
   const [result, setResult] = useState(null);
   const load = async () => setData((await platformApi.course(courseId)).data);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [courseId]);
   const complete = async (lesson) => {
     const quiz_answers = lesson.quiz.map((_, idx) => Number(answers[`${lesson.id}-${idx}`] || 0));

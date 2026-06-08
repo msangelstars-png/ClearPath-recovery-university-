@@ -22,6 +22,7 @@ export default function ProgramDetail() {
       setData({ program: program ? { ...program, tracks: [] } : null, submissions: [] });
     }
   };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [programId]);
   const submit = async (track, module, assignment) => {
     const { data: res } = await platformApi.submitAssignment({ program_id: programId, track_id: track.id, module_id: module.id, assignment_id: assignment.id, text_response: responses[assignment.id] || "Completed through classroom practice.", file_ids: [], language: "en" });

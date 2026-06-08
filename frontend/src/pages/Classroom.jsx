@@ -12,6 +12,7 @@ export default function Classroom() {
   const [question, setQuestion] = useState("");
   const [message, setMessage] = useState("");
   const load = async () => setData((await platformApi.classDetail(classId)).data);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(); }, [classId]);
   const join = async () => { await platformApi.joinClass(classId); setMessage("Attendance saved. You can leave and continue later from any device."); load(); };
   const ask = async () => { await platformApi.askClassQuestion(classId, { question, language: "en" }); setQuestion(""); load(); };
