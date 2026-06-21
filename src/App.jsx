@@ -1,6 +1,5 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { SpeedInsights } from '@vercel/speed-insights/react';
-import { Analytics } from '@vercel/analytics/react';
 import { AuthProvider } from '@/context/AuthContext';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
@@ -91,7 +90,7 @@ export default function App() {
         <footer role="contentinfo" />
 
         <SpeedInsights />
-        <Analytics />
+        
 JavaScript
       </AuthProvider>
     </BrowserRouter>
