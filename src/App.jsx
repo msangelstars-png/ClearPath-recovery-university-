@@ -84,7 +84,7 @@ export default function App() {
             <Route path="/admin/support" element={<ProtectedRoute adminOnly><AdminSupport /></ProtectedRoute>} />
             <Route path="/provider" element={<ProtectedRoute providerOnly><ProviderDashboard /></ProtectedRoute>} />
 
-            <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
 
@@ -92,7 +92,7 @@ export default function App() {
 
         <SpeedInsights />
         <Analytics />
-
+JavaScript
       </AuthProvider>
     </BrowserRouter>
   );
